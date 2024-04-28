@@ -8,7 +8,7 @@
 PRODUCT_NAME = xstock
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.appgemz.xstock.xstock
+PRODUCT_BUNDLE_IDENTIFIER = com.appgemz.xstock
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2024 com.appgemz.xstock. All rights reserved.
