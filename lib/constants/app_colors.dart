@@ -24,13 +24,15 @@ class AppColors {
   // PLAIN COLORS
   static const white = Color(0xFFFFFFFF);
   static const black = Color(0xFF000000);
-  static const red = Color(0xFFF44336);
+  static const red = Color(0xFFEE0E0E);
   static const darkRadish = Color(0xFFC10B0E);
   static const blue = Color(0xFF0978F2);
   static const blue1 = Color(0xff0e4e6a);
   static const seeGreen = Color(0xff409a9d);
-  static const lightGreen = Color(0xff0EAD69);
+  static const lightGreen = Color(0xff9ADAB5);
   static const darkGreen = Color(0xff038272);
   static const transparent = Color(0x00000000);
+  static const fieldColor = Color(0xFF252934);
+  static const addItemColor = Color(0xFF53618B);
   static const pink = Color(0xFFD14096);
 }

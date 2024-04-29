@@ -23,7 +23,7 @@ class XStockApp extends StatelessWidget {
         builder: (context, state) {
           return MaterialApp(
             navigatorKey: NavRouter.navigationKey,
-            title: 'Psykee',
+            title: 'XStock',
             debugShowCheckedModeBanner: false,
             theme: lightTheme,
             themeMode: ThemeMode.light,

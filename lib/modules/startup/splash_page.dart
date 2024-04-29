@@ -1,7 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:xstock/config/routes/nav_router.dart';
+import 'package:xstock/modules/authentication/pages/login_page.dart';
+import 'package:xstock/modules/home/pages/home_page.dart';
+import 'package:xstock/modules/startup/welcome_page.dart';
+import 'package:xstock/utils/extensions/extended_context.dart';
 
 import '../../constants/asset_paths.dart';
 import '../../core/core.dart';
@@ -28,16 +34,18 @@ class _SplashPageState extends State<SplashPage> {
             // var user = context.read<UserCubit>().state.userModel;
             // NavRouter.pushAndRemoveUntil(context, Dashboard(userId: user.advisor.userId.toString(),));
           } else if (state.status == Status.unauthenticated) {
-            // NavRouter.pushAndRemoveUntilWithAnimation(context, LoginPage(),
-            //     type: PageTransitionType.size, hasAlignment: true);
+            NavRouter.pushAndRemoveUntilWithAnimation(context, HomePage(),
+                type: PageTransitionType.size, hasAlignment: true);
           }
         },
         child: Scaffold(
-          body: Image.asset(
-            AssetPaths.splashBackground,
-            fit: BoxFit.cover,
-            width: MediaQuery.of(context).size.width,
-            height: MediaQuery.of(context).size.height,
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Image.asset(
+              AssetPaths.appLogo,
+              width: 184,
+              height: 128,
+            ),
           ),
         ),
       ),

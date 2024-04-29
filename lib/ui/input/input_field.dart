@@ -24,11 +24,11 @@ class InputField extends StatefulWidget {
     super.key,
     this.onChange,
     this.borderColor,
-    this.borderRadius = 6,
+    this.borderRadius = 16,
     this.fontSize = 14,
     this.boxConstraints = 44,
     this.fontWeight = FontWeight.w400,
-    this.fillColor = AppColors.white,
+    this.fillColor = const  Color(0xFF252934),
     this.hintColor = AppColors.grey1,
     this.horizontalPadding = 24,
     this.verticalPadding = 10,
@@ -223,7 +223,7 @@ class _InputFieldState extends State<InputField> {
               borderSide: BorderSide(
                   color: widget.borderColor != null
                       ? widget.borderColor!
-                      : context.colorScheme.outline,
+                      :  Color(0xFF252934),
                   width: .5),
             ),
             enabledBorder: OutlineInputBorder(
@@ -231,7 +231,7 @@ class _InputFieldState extends State<InputField> {
               borderSide: BorderSide(
                   color: widget.borderColor != null
                       ? widget.borderColor!
-                      : context.colorScheme.outline,
+                      :  Color(0xFF252934),
                   width: .5),
             ),
             focusedBorder: OutlineInputBorder(

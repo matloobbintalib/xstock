@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:xstock/constants/asset_paths.dart';
 
 
 /// headline large 24 800
@@ -15,10 +16,10 @@ import 'package:flutter/material.dart';
 
 final lightTheme = _getTheme();
 
-const _primary = Color(0xFFd14096);
-const _onPrimary = Color(0xFF1B1F81);
+const _primary = Color(0xFF00D8FA);
+const _onPrimary = Color(0xFF252934);
 const _onSecondary = Color(0xFF8A8787);
-const _secondary = Color(0xFF8D8FC0);
+const _secondary = Color(0xFF1631C2);
 
 const _background = Color(0xFFFFFFFF);
 const _onPrimaryContainer = Color(0xFFfef9f3);
@@ -247,15 +248,15 @@ final _lightColorScheme = ColorScheme(
 /// ************************************** Text Theme **************************************
 
 TextTheme _getTextTheme(ColorScheme colorScheme) {
-  const headlineColor = _dark2;
+  const headlineColor = _background;
   const headlineWeight = FontWeight.w600;
   const headlineHeight = 1.2;
 
-  const titleColor = _dark1;
+  const titleColor = _background;
   const titleWeight = FontWeight.w500;
   const titleHeight = 1.2;
 
-  const bodyColor = _dark1;
+  const bodyColor = _background;
   const bodyWeight = FontWeight.normal;
   const bodyHeight = 1.5;
 
@@ -265,7 +266,7 @@ TextTheme _getTextTheme(ColorScheme colorScheme) {
     // Headline
     headlineLarge: TextStyle(
       fontSize: 24,
-      
+      fontFamily: AssetPaths.latoFont,
       height: headlineHeight,
       color: headlineColor,
       fontWeight: headlineWeight,
@@ -274,11 +275,12 @@ TextTheme _getTextTheme(ColorScheme colorScheme) {
       fontSize: 20,
       height: headlineHeight,
       color: headlineColor,
+      fontFamily: AssetPaths.latoFont,
       fontWeight: headlineWeight,
     ),
     headlineSmall: TextStyle(
       fontSize: 18,
-      
+      fontFamily: AssetPaths.latoFont,
       height: headlineHeight,
       color: headlineColor,
       fontWeight: headlineWeight,
@@ -287,21 +289,21 @@ TextTheme _getTextTheme(ColorScheme colorScheme) {
     // Title
     titleLarge: TextStyle(
       fontSize: 18,
-      
+      fontFamily: AssetPaths.latoFont,
       height: titleHeight,
       color: titleColor,
       fontWeight: titleWeight,
     ),
     titleMedium: TextStyle(
       fontSize: 16,
-      
+      fontFamily: AssetPaths.latoFont,
       height: titleHeight,
       color: titleColor,
       fontWeight: titleWeight,
     ),
     titleSmall: TextStyle(
       fontSize: 14,
-      
+      fontFamily: AssetPaths.latoFont,
       height: titleHeight,
       color: titleColor,
       fontWeight: titleWeight,
@@ -310,21 +312,21 @@ TextTheme _getTextTheme(ColorScheme colorScheme) {
     // Body
     bodyLarge: TextStyle(
       fontSize: 16,
-      
+      fontFamily: AssetPaths.latoFont,
       height: bodyHeight,
       color: bodyColor,
       fontWeight: bodyWeight,
     ),
     bodyMedium: TextStyle(
       fontSize: 14,
-      
+      fontFamily: AssetPaths.latoFont,
       height: bodyHeight,
       color: bodyColor,
       fontWeight: bodyWeight,
     ),
     bodySmall: TextStyle(
       fontSize: 12,
-      
+      fontFamily: AssetPaths.latoFont,
       height: bodyHeight,
       color: bodyColor,
       fontWeight: bodyWeight,
@@ -333,21 +335,21 @@ TextTheme _getTextTheme(ColorScheme colorScheme) {
     // Label
     labelLarge: TextStyle(
       fontSize: 16,
-      
+      fontFamily: AssetPaths.latoFont,
       height: bodyHeight,
       color: labelColor,
       fontWeight: bodyWeight,
     ),
     labelMedium: TextStyle(
       fontSize: 12,
-      
+      fontFamily: AssetPaths.latoFont,
       height: bodyHeight,
       color: labelColor,
       fontWeight: bodyWeight,
     ),
     labelSmall: TextStyle(
       fontSize: 11,
-      
+      fontFamily: AssetPaths.latoFont,
       height: bodyHeight,
       color: labelColor,
       fontWeight: bodyWeight,

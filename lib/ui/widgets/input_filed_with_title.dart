@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:xstock/constants/constants.dart';
 import 'package:xstock/utils/validators/validators.dart';
 
 class InputFieldWithTitle extends StatefulWidget {
   final String hint;
+  final String floatingHint;
   final TextEditingController controller;
   final TextInputType keyboardType;
   final Widget? suffixIcon;
@@ -20,10 +22,12 @@ class InputFieldWithTitle extends StatefulWidget {
   final FormFieldValidator<String>? validator;
   final TextInputAction? textInputAction;
   final double suffixMargin;
+  final bool obscureText;
 
   const InputFieldWithTitle(
       {super.key,
       required this.hint,
+      required this.floatingHint,
       required this.controller,
       this.keyboardType = TextInputType.text,
       this.suffixIcon,
@@ -33,14 +37,16 @@ class InputFieldWithTitle extends StatefulWidget {
       this.maxLength,
       this.readOnly = false,
       this.onChange,
-      this.fillColor = Colors.white,
-      this.borderColor = const Color(0xFFD9D9D9),
+      this.fillColor = const Color(0xFF252934),
+      this.borderColor = const Color(0xFF252934),
       this.hintColor = Colors.grey,
-      this.borderRadius = 6,
+      this.borderRadius = 20,
       this.onTap,
       this.validator,
       this.textInputAction,
-      this.suffixMargin = 16});
+      this.suffixMargin = 16,
+        this.obscureText = false,
+      });
 
   @override
   State<InputFieldWithTitle> createState() => _InputFieldWithTitleState();
@@ -52,7 +58,7 @@ class _InputFieldWithTitleState extends State<InputFieldWithTitle> {
     final validator =
         widget.validator ?? Validators.getValidator(widget.keyboardType);
     return Container(
-      height: 54,
+      height: 64,
       padding: const EdgeInsets.only(left: 16, right: 12),
       decoration: BoxDecoration(
         color: widget.fillColor,
@@ -67,14 +73,16 @@ class _InputFieldWithTitleState extends State<InputFieldWithTitle> {
         textInputAction: widget.textInputAction,
         onChanged: widget.onChange,
         maxLines: widget.maxLines,
+        obscureText: widget.obscureText,
         maxLength: widget.maxLength,
         style: const TextStyle(fontSize: 16),
         decoration: InputDecoration(
-          labelStyle: TextStyle(fontSize: 18, color: widget.hintColor),
-          labelText: widget.hint,
+          labelStyle: TextStyle(fontSize: 18, color: widget.hintColor,fontWeight: FontWeight.w500,fontFamily: AssetPaths.latoFont,),
+          labelText: widget.floatingHint,
+          hintText:widget.hint,
           floatingLabelBehavior: FloatingLabelBehavior.always,
           floatingLabelStyle:
-              const TextStyle(height: .8, color: Colors.grey, fontSize: 18),
+              const TextStyle(height: .8, color: Colors.grey, fontSize: 18,fontFamily: AssetPaths.latoFont,fontWeight: FontWeight.w400),
           fillColor: widget.fillColor,
           border: InputBorder.none,
           focusedBorder: InputBorder.none,

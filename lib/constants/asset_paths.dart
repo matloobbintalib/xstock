@@ -1,6 +1,6 @@
 class AssetPaths {
   ///* ================ Fonts ================ *///
-  static const String aileronFont = 'Raleway';
+  static const String latoFont = 'Lato';
 
   ///* ================ Png ================ *///
   static const String logo = 'assets/images/png/app_logo.png';
@@ -11,5 +11,7 @@ class AssetPaths {
 
   static const String splashBottomImage = 'assets/images/svg/splash_background.svg';
   static const String splashBackground = 'assets/images/png/splash_background.png';
+  static const String welcomeBackground = 'assets/images/png/welcome_background.png';
+  static const String appLogo = 'assets/images/png/app_logo.png';
   static const String loginBackgroundImage = 'assets/images/png/login_background.png';
 }

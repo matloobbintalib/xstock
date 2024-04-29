@@ -13,6 +13,7 @@ class PrimaryButton extends StatelessWidget {
     this.width = double.infinity,
     this.backgroundColor,
     this.titleColor = AppColors.white,
+    this.borderColor = const Color(0xFF00D8FA),
     this.fontWeight = FontWeight.w600,
     this.fontSize = 16,
     this.fontWidget,
@@ -25,6 +26,7 @@ class PrimaryButton extends StatelessWidget {
   final double width;
   final Color? backgroundColor;
   final Color? titleColor;
+  final Color? borderColor;
   final double borderRadius;
   final FontWeight fontWeight;
   final double? fontSize;
@@ -41,7 +43,7 @@ class PrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(borderRadius),),
+            borderRadius: BorderRadius.circular(borderRadius),side: BorderSide(color: borderColor!=null ?borderColor!:Color(0xFF00D8FA))),
           backgroundColor: backgroundColor,
         ),
         child: Stack(
