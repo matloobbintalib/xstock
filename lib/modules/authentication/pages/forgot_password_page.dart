@@ -9,6 +9,7 @@ import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/constants/asset_paths.dart';
 import 'package:xstock/modules/authentication/pages/login_page.dart';
 import 'package:xstock/ui/input/input_field.dart';
+import 'package:xstock/ui/widgets/appbar_widget.dart';
 import 'package:xstock/ui/widgets/input_filed_with_title.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
@@ -38,19 +39,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(height: 10,),
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                      alignment: Alignment.centerLeft,
-                      child: OnClick(onTap: (){
-                        Navigator.pop(context);
-                      }, child: SvgPicture.asset("assets/images/svg/ic_back.svg"))),
-                  Align(
-                      alignment: Alignment.center,
-                      child: Text("Forgot\nPassword",textAlign:TextAlign.center,style: context.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600,fontSize: 36),))
-                ],
-              ),
+              AppbarWidget(title: 'Forgot\nPassword',),
               SizedBox(
                 height: 70,
               ),

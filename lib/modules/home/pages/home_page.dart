@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/modules/home/dialogs/item_detail_dialog.dart';
 import 'package:xstock/modules/home/widgets/group_widget.dart';
+import 'package:xstock/modules/settings/pages/settings_page.dart';
 import 'package:xstock/ui/input/input_field.dart';
+import 'package:xstock/ui/widgets/on_click.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -36,7 +40,9 @@ class _HomePageState extends State<HomePage> {
                     icon:
                         SvgPicture.asset("assets/images/svg/ic_add_group.svg")),
                 IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      NavRouter.pushWithAnimation(context, SettingsPage());
+                    },
                     icon:
                         SvgPicture.asset("assets/images/svg/ic_settings.svg")),
               ],
@@ -51,9 +57,10 @@ class _HomePageState extends State<HomePage> {
               borderRadius: 16,
               verticalPadding: 20,
               fillColor: AppColors.fieldColor,
-              fontWeight: FontWeight.w200,
+              fontWeight: FontWeight.w400 ,
               fontSize: 14,
               boxConstraints: 60,
+              hintColor: Colors.white,
               prefixIcon: Padding(
                 padding: const EdgeInsets.only(left: 20, right: 10),
                 child: SvgPicture.asset(
@@ -65,7 +72,14 @@ class _HomePageState extends State<HomePage> {
                 child: ListView.builder(
                     itemCount: 2,
                     itemBuilder: (context, index) {
-                      return GroupWidget();
+                      return OnClick(onTap: () {
+                        showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return ItemDetailDialog();
+                            });
+                      },
+                      child: GroupWidget());
                     })),
           ],
         ),

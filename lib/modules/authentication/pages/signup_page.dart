@@ -12,6 +12,8 @@ import 'package:xstock/modules/authentication/cubits/signup/signup_cubit.dart';
 import 'package:xstock/modules/authentication/cubits/signup/signup_state.dart';
 import 'package:xstock/modules/authentication/pages/login_page.dart';
 import 'package:xstock/modules/authentication/widgets/password_suffix_widget.dart';
+import 'package:xstock/modules/home/pages/home_page.dart';
+import 'package:xstock/ui/widgets/appbar_widget.dart';
 import 'package:xstock/ui/widgets/input_filed_with_title.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
@@ -58,19 +60,7 @@ class _SignUpPageState extends State<SignUpPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(height: 10,),
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                      alignment: Alignment.centerLeft,
-                      child: OnClick(onTap: (){
-                        Navigator.pop(context);
-                      }, child: SvgPicture.asset("assets/images/svg/ic_back.svg"))),
-                  Align(
-                    alignment: Alignment.center,
-                      child: Text("Sign Up",textAlign:TextAlign.center,style: context.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600,fontSize: 36),))
-                ],
-              ),
+              AppbarWidget(title: 'Sign Up',),
               SizedBox(
                 height: 40,
               ),
@@ -114,7 +104,9 @@ class _SignUpPageState extends State<SignUpPage> {
                 height: 50,
               ),
               PrimaryButton(
-                onPressed: () {},
+                onPressed: () {
+                  NavRouter.push(context, HomePage());
+                },
                 title: 'Register',
                 titleColor: Colors.black,
                 width: 200,
@@ -124,8 +116,7 @@ class _SignUpPageState extends State<SignUpPage> {
               SizedBox(
                 height: 40,
               ),
-              Platform.isAndroid
-                  ? PrefixIconButton(
+              PrefixIconButton(
                 onPressed: () {},
                 title: 'Sign in with Google',
                 prefixIconPath: 'assets/images/svg/ic_google.svg',
@@ -136,15 +127,15 @@ class _SignUpPageState extends State<SignUpPage> {
                 titleColor: Colors.white,
                 backgroundColor: AppColors.fieldColor,
                 borderColor: AppColors.fieldColor,
-              )
-                  : PrefixIconButton(
+              ),SizedBox(height: 16,),
+              PrefixIconButton(
                 onPressed: () {},
                 title: 'Sign in with Apple',
-                prefixIconPath: 'assets/images/svg/ic_google.svg',
+                prefixIconPath: 'assets/images/svg/ic_apple.svg',
                 borderRadius: 20,
-                prefixIconSize: 30,
                 height: 64,
                 fontSize: 14,
+                prefixIconSize: 30,
                 titleColor: Colors.white,
                 backgroundColor: AppColors.fieldColor,
                 borderColor: AppColors.fieldColor,

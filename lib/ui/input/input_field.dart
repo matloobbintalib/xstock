@@ -208,7 +208,7 @@ class _InputFieldState extends State<InputField> {
           maxLines: widget.maxLines,
           onChanged: widget.onChange,
           style: context.textTheme.bodyMedium?.copyWith(
-              color: context.colorScheme.onSecondaryContainer,
+              color: Colors.white,
               fontSize: widget.fontSize,
               fontWeight: widget.fontWeight),
           decoration: InputDecoration(
@@ -237,7 +237,9 @@ class _InputFieldState extends State<InputField> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(widget.borderRadius),
               borderSide: BorderSide(
-                color: context.colorScheme.onSecondaryContainer,
+                color: widget.borderColor != null
+                    ? widget.borderColor!
+                    :  Color(0xFF252934),
               ),
             ),
             errorBorder: OutlineInputBorder(

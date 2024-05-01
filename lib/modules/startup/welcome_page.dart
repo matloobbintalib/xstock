@@ -38,9 +38,9 @@ class WelcomePage extends StatelessWidget {
                     NavRouter.push(context, SignUpPage());
                   },
                   title: 'Get Started',
-                  titleColor: Colors.black,
-                  backgroundColor: Color(0xff00D8FA),
-                  borderColor: Color(0xff00D8FA),
+                  titleColor: context.colorScheme.secondary,
+                  backgroundColor:context.colorScheme.primary,
+                  borderColor: context.colorScheme.primary,
                   width: 200,
                   height: 56,
                   borderRadius: 28,

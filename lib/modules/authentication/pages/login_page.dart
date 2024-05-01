@@ -9,6 +9,7 @@ import 'package:xstock/modules/authentication/cubits/login/login_cubit.dart';
 import 'package:xstock/modules/authentication/cubits/login/login_state.dart';
 import 'package:xstock/modules/authentication/pages/forgot_password_page.dart';
 import 'package:xstock/modules/authentication/widgets/password_suffix_widget.dart';
+import 'package:xstock/modules/home/pages/home_page.dart';
 import 'package:xstock/ui/widgets/input_filed_with_title.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/ui/widgets/toast_loader.dart';
@@ -99,7 +100,9 @@ class _LoginPageState extends State<LoginPage> {
                       height: 24,
                     ),
                     PrimaryButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        NavRouter.push(context, HomePage());
+                      },
                       title: 'Sign In',
                       titleColor: Colors.black,
                       width: 200,
@@ -109,8 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                     SizedBox(
                       height: 50,
                     ),
-                    Platform.isAndroid
-                        ? PrefixIconButton(
+                    PrefixIconButton(
                       onPressed: () {},
                       title: 'Sign in with Google',
                       prefixIconPath: 'assets/images/svg/ic_google.svg',
@@ -121,11 +123,12 @@ class _LoginPageState extends State<LoginPage> {
                       titleColor: Colors.white,
                       backgroundColor: AppColors.fieldColor,
                       borderColor: AppColors.fieldColor,
-                    )
-                        : PrefixIconButton(
+                    ),
+                    SizedBox(height: 16,),
+                    PrefixIconButton(
                       onPressed: () {},
                       title: 'Sign in with Apple',
-                      prefixIconPath: 'assets/images/svg/ic_google.svg',
+                      prefixIconPath: 'assets/images/svg/ic_apple.svg',
                       borderRadius: 20,
                       height: 64,
                       fontSize: 14,

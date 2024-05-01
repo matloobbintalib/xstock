@@ -2,19 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:xstock/config/routes/nav_router.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/modules/home/dialogs/stock_image_dialog.svg.dart';
+import 'package:xstock/modules/home/dialogs/upload_picture_dialog.dart';
+import 'package:xstock/modules/home/pages/edit_item_page.dart';
 import 'package:xstock/ui/input/input_field.dart';
+import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/ui/widgets/remember_me_widget.dart';
+import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
-class AddItemDialog extends StatefulWidget {
-  const AddItemDialog({super.key});
+class ItemDetailDialog extends StatefulWidget {
+  const ItemDetailDialog({super.key});
 
   @override
-  State<AddItemDialog> createState() => _AddItemDialogState();
+  State<ItemDetailDialog> createState() => _ItemDetailDialogState();
 }
 
-class _AddItemDialogState extends State<AddItemDialog>
+class _ItemDetailDialogState extends State<ItemDetailDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   TextEditingController inputCountController = new TextEditingController();
@@ -42,6 +47,7 @@ class _AddItemDialogState extends State<AddItemDialog>
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppColors.fieldColor,
+      insetPadding: EdgeInsets.symmetric(horizontal: 20),
       shape: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
           borderSide: BorderSide(color: AppColors.fieldColor)),
@@ -71,7 +77,11 @@ class _AddItemDialogState extends State<AddItemDialog>
                     style: context.textTheme.headlineMedium?.copyWith(
                         color: Colors.black, fontWeight: FontWeight.w600),
                   )),
-                  SvgPicture.asset("assets/images/svg/ic_edit_item.svg")
+                  OnClick(onTap: () {
+                    NavRouter.pop(context);
+                    NavRouter.pushWithAnimation(context, EditItemPage());
+                  },
+                  child: SvgPicture.asset("assets/images/svg/ic_edit_item.svg"))
                 ],
               ),
             ),
@@ -127,7 +137,7 @@ class _AddItemDialogState extends State<AddItemDialog>
                       controller: inputCountController,
                       label: 'Input Count',
                       verticalPadding: 18,
-                      borderRadius: 20,
+                      borderRadius: 10,
                       borderColor: Colors.black,
                       fillColor: Colors.black,
                       keyboardType: TextInputType.number,
@@ -137,9 +147,6 @@ class _AddItemDialogState extends State<AddItemDialog>
                             _selectedTabIndex == 0?"assets/images/svg/ic_add_item.svg":'assets/images/svg/ic_minus.svg'),
                       ),
                       textInputAction: TextInputAction.done),
-                  SizedBox(
-                    height: 14,
-                  ),
                   Row(
                     children: [
                       Expanded(
@@ -147,17 +154,26 @@ class _AddItemDialogState extends State<AddItemDialog>
                         "Minimum Stock Alert",
                         style: context.textTheme.bodyMedium,
                       )),
-                      SvgPicture.asset("assets/images/svg/ic_take_picture.svg")
+                      OnClick(
+                        onTap: () {
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return StockImageDialog();
+                              });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(14.0),
+                          child: SvgPicture.asset("assets/images/svg/ic_take_picture.svg"),
+                        ),
+                      )
                     ],
-                  ),
-                  SizedBox(
-                    height: 14,
                   ),
                   InputField(
                       controller: minimumAlertCountController,
                       label: 'i-e : 01',
                       verticalPadding: 18,
-                      borderRadius: 20,
+                      borderRadius: 10,
                       borderColor: Colors.black,
                       fillColor: Colors.black,
                       keyboardType: TextInputType.number,
@@ -168,7 +184,8 @@ class _AddItemDialogState extends State<AddItemDialog>
                   RememberMeWidget(
                     title: "Enable Expiry Date Alerts(Optional)",
                     titleColor: Colors.white,
-                    checkBoxSize: 18,
+                    checkBoxSize: 20,
+                    checkColor: AppColors.fieldColor,
                     fontSize: 14,
                   ),
                   SizedBox(
@@ -179,7 +196,7 @@ class _AddItemDialogState extends State<AddItemDialog>
                       label: 'Select Date',
                       verticalPadding: 18,
                       readOnly: true,
-                      borderRadius: 20,
+                      borderRadius: 10,
                       borderColor: Colors.black,
                       fillColor: Colors.black,
                       keyboardType: TextInputType.number,
@@ -208,7 +225,7 @@ class _AddItemDialogState extends State<AddItemDialog>
                         borderColor: Colors.black,
                       )),
                       SizedBox(
-                        width: 20,
+                        width: 22,
                       ),
                       Expanded(
                         child: PrimaryButton(

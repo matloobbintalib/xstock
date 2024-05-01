@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/utils/utils.dart';
@@ -47,7 +48,7 @@ class _RememberMeWidgetState extends State<RememberMeWidget> {
           child: Container(
             decoration: BoxDecoration(
                 shape: BoxShape.rectangle,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: context.colorScheme.outline),
                 color: context.colorScheme.outline ?? Colors.grey.withOpacity(.2)),
             height: widget.checkBoxSize,
@@ -57,7 +58,7 @@ class _RememberMeWidgetState extends State<RememberMeWidget> {
               child: Icon(
                 Icons.check,
                 color: isKeepMeLoggedIn
-                    ? context.colorScheme.primary
+                    ? widget.checkColor
                     : Colors.transparent,
                 size: widget.checkBoxSize - 2,
               ),
@@ -65,12 +66,14 @@ class _RememberMeWidgetState extends State<RememberMeWidget> {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          widget.title,
-          style:
-              context.textTheme.bodySmall?.copyWith(
-                color: widget.titleColor ??   context.colorScheme.onSecondary,
-                  fontSize: widget.fontSize),
+        Expanded(
+          child: Text(
+            widget.title,
+            style:
+                context.textTheme.bodySmall?.copyWith(
+                  color: widget.titleColor ??   context.colorScheme.onSecondary,
+                    fontSize: widget.fontSize),
+          ),
         ),
       ],
     );

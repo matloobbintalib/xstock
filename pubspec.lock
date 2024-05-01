@@ -169,6 +169,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.4.3+1"
+  dotted_line:
+    dependency: "direct main"
+    description:
+      name: dotted_line
+      sha256: c931ba331656154711d9420f369f80cf9e8869ca9933ae5fb35b7669bcbe7d2e
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.2.2"
   draggable_bottom_sheet:
     dependency: "direct main"
     description:
@@ -302,6 +310,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.3.2"
+  flutter_dash:
+    dependency: "direct main"
+    description:
+      name: flutter_dash
+      sha256: dc282109cc12806853e102a4e8b9d99abb7f527fcedec2ea03860e2500ee6622
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
+  flutter_hsvcolor_picker:
+    dependency: "direct main"
+    description:
+      name: flutter_hsvcolor_picker
+      sha256: ea5868dbb1c840ef502bbf60168b26e18eab13a3a2b07bfef0c59a64e7fedc2c
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.5.0"
   flutter_image_compress:
     dependency: "direct main"
     description:

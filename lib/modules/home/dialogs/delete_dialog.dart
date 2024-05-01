@@ -11,6 +11,7 @@ class DeleteDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppColors.fieldColor,
+      insetPadding: EdgeInsets.symmetric(horizontal: 20),
       shape: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
         borderSide: BorderSide(color: AppColors.fieldColor)

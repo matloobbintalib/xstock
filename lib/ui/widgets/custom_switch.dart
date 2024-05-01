@@ -14,9 +14,9 @@ class CustomSwitch extends StatefulWidget {
     required this.onChanged,
     required this.value,
     this.trackHeight = 24,
-    this.thumbHeight = 18,
+    this.thumbHeight = 16,
     this.thumbColor = const Color(0xFFD14096),
-    this.trackActiveColor = Colors.white,
+    this.trackActiveColor = const Color(0xFF01D54D),
     this.trackInActiveColor = Colors.white,
   });
 
@@ -58,14 +58,15 @@ class _CustomSwitchState extends State<CustomSwitch>
                 : widget.onChanged(false);
           },
           child: Container(
-            width: 48.0,
+            width: 40.0,
+
             child: Stack(
               children: [
                 Positioned.fill(
                   child: Align(
                     alignment: Alignment.center,
                     child: Container(
-                      width: 48.0,
+                      width: 40.0,
                       height: widget.trackHeight,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(24.0),
@@ -90,7 +91,7 @@ class _CustomSwitchState extends State<CustomSwitch>
                     height: widget.thumbHeight,
                     decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: widget.value ? widget.thumbColor:Colors.grey  ),
+                        color: widget.value ? Colors.white:Colors.grey  ),
                   ),
                 )
               ],

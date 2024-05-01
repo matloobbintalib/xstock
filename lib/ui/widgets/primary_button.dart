@@ -198,7 +198,7 @@ class PrefixIconButton extends StatelessWidget {
             Text(
               title,
               style: context.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   fontSize: fontSize,
                   color: titleColor),
             )
