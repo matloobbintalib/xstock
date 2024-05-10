@@ -6,18 +6,19 @@ import 'confirmation_dialog.dart';
 sealed class Dialogs {
   Dialogs_();
 
-  static Future<void> showLogOutConfirmationDialog(
+  static Future<bool> showLogOutConfirmationDialog(
     BuildContext context,
   ) async {
     final confirmed = await _showConfirmationDialog(
       context,
-      title: 'Sign Out',
+      title: 'Log Out',
       message: 'Are you sure you want to Sing Out?',
     );
-
-    // if (confirmed && context.mounted) {
-    //   await context.read<UserCubit>().logoutApi();
-    // }
+    if (confirmed && context.mounted) {
+      return true;
+    }else{
+      return false;
+    }
   }
 
   static Future<void> showDeleteAccountConfirmationDialog(

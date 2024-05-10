@@ -5,7 +5,6 @@ import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/modules/home/dialogs/color_chooser_dialog.dart';
 import 'package:xstock/modules/home/dialogs/new_group_dialog.dart';
 import 'package:xstock/modules/home/models/group_name_item_model.dart';
-import 'package:xstock/modules/home/widgets/color_picker_test.dart';
 import 'package:xstock/modules/home/widgets/group_name_item_widget.dart';
 import 'package:xstock/ui/input/input_field.dart';
 import 'package:xstock/ui/widgets/appbar_widget.dart';

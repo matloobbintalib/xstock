@@ -24,29 +24,29 @@ class InputFieldWithTitle extends StatefulWidget {
   final double suffixMargin;
   final bool obscureText;
 
-  const InputFieldWithTitle(
-      {super.key,
-      required this.hint,
-      required this.floatingHint,
-      required this.controller,
-      this.keyboardType = TextInputType.text,
-      this.suffixIcon,
-      this.prefixIcon,
-      this.onFieldSubmitted,
-      this.maxLines,
-      this.maxLength,
-      this.readOnly = false,
-      this.onChange,
-      this.fillColor = const Color(0xFF252934),
-      this.borderColor = const Color(0xFF252934),
-      this.hintColor = Colors.grey,
-      this.borderRadius = 20,
-      this.onTap,
-      this.validator,
-      this.textInputAction,
-      this.suffixMargin = 16,
-        this.obscureText = false,
-      });
+  const InputFieldWithTitle({
+    super.key,
+    required this.hint,
+    required this.floatingHint,
+    required this.controller,
+    this.keyboardType = TextInputType.text,
+    this.suffixIcon,
+    this.prefixIcon,
+    this.onFieldSubmitted,
+    this.maxLines,
+    this.maxLength,
+    this.readOnly = false,
+    this.onChange,
+    this.fillColor = const Color(0xFF252934),
+    this.borderColor = const Color(0xFF252934),
+    this.hintColor = Colors.white,
+    this.borderRadius = 20,
+    this.onTap,
+    this.validator,
+    this.textInputAction,
+    this.suffixMargin = 16,
+    this.obscureText = false,
+  });
 
   @override
   State<InputFieldWithTitle> createState() => _InputFieldWithTitleState();
@@ -77,12 +77,21 @@ class _InputFieldWithTitleState extends State<InputFieldWithTitle> {
         maxLength: widget.maxLength,
         style: const TextStyle(fontSize: 16),
         decoration: InputDecoration(
-          labelStyle: TextStyle(fontSize: 18, color: widget.hintColor,fontWeight: FontWeight.w500,fontFamily: AssetPaths.latoFont,),
+          labelStyle: TextStyle(
+            fontSize: 18,
+            color: widget.hintColor,
+            fontWeight: FontWeight.w500,
+            fontFamily: AssetPaths.latoFont,
+          ),
           labelText: widget.floatingHint,
-          hintText:widget.hint,
+          hintText: widget.hint,
           floatingLabelBehavior: FloatingLabelBehavior.always,
-          floatingLabelStyle:
-              const TextStyle(height: .8, color: Colors.grey, fontSize: 18,fontFamily: AssetPaths.latoFont,fontWeight: FontWeight.w400),
+          floatingLabelStyle: const TextStyle(
+              height: .8,
+              color: Colors.white,
+              fontSize: 18,
+              fontFamily: AssetPaths.latoFont,
+              fontWeight: FontWeight.w500),
           fillColor: widget.fillColor,
           border: InputBorder.none,
           focusedBorder: InputBorder.none,
@@ -91,11 +100,15 @@ class _InputFieldWithTitleState extends State<InputFieldWithTitle> {
           disabledBorder: InputBorder.none,
           focusedErrorBorder: InputBorder.none,
           prefixIcon: widget.prefixIcon,
-          prefixIconConstraints: const BoxConstraints(maxWidth: 44, maxHeight: 44),
+          prefixIconConstraints: widget.prefixIcon != null
+              ? const BoxConstraints(maxWidth: 44, maxHeight: 44)
+              : BoxConstraints(maxWidth: 0, maxHeight: 0),
           suffixIcon: Container(
               margin: EdgeInsets.only(right: widget.suffixMargin),
               child: widget.suffixIcon),
-          suffixIconConstraints: const BoxConstraints(maxHeight: 44, maxWidth: 58),
+          suffixIconConstraints: widget.suffixIcon != null
+              ? const BoxConstraints(maxHeight: 44, maxWidth: 58)
+              : BoxConstraints(maxWidth: 0, maxHeight: 0),
         ),
       ),
     );

@@ -1,20 +1,26 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
 class ItemWidget extends StatelessWidget {
-  const ItemWidget({super.key});
+  final int index;
+
+  const ItemWidget({super.key, required this.index});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: Color(0xFF9ADAB5)
-      ),
-      padding:EdgeInsets.only(left: 10,top: 10),
-      child:Column(
+          borderRadius: BorderRadius.circular(20),
+          color: index == 0
+              ? Color(0xFF9ADAB5)
+              : index == 1
+                  ? Color(0xFFDDB8E3)
+                  : index == 2
+                      ? Color(0xFF9BCCDB)
+                      : Color(0xFF00D8FA)),
+      padding: EdgeInsets.only(left: 10, top: 10),
+      child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.only(left: 16,right: 12),

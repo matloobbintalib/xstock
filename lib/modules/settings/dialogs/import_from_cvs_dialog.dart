@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/modules/settings/dialogs/export_dialog.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/utils/utils.dart';
 
@@ -42,7 +43,11 @@ class ImportFromCvsDialog extends StatelessWidget {
               height: 14,
             ),
             PrimaryButton(
-              onPressed: () {},
+              onPressed: () {
+                showDialog(context: (context), builder: (context){
+                  return ExportDialog();
+                });
+              },
               title: 'Export Template ',
               fontSize: 14,
               fontWeight: FontWeight.w600,

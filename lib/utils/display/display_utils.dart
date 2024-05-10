@@ -19,7 +19,7 @@ class DisplayUtils {
     Fluttertoast.showToast(
         msg: title,
         toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.CENTER,
+        gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
         /*backgroundColor: Colors.red,
         textColor: Colors.white,*/

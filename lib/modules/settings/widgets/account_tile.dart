@@ -75,7 +75,7 @@ class AccountTile extends StatelessWidget {
                     fontWeight: FontWeight.w500),
               ),
               Text(
-                model.name,
+                model.email,
                 style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,

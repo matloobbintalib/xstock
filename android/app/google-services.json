@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "900352737743",
+    "project_id": "xstock-73a4b",
+    "storage_bucket": "xstock-73a4b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:900352737743:android:55200675936c86723f12ba",
+        "android_client_info": {
+          "package_name": "com.appgemz.xstock"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "900352737743-ajia1tq36skh5ihbahfmlho4lkun3cvk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.appgemz.xstock",
+            "certificate_hash": "2d99030aa98e054b6e6be563bd4a224d79e3ec72"
+          }
+        },
+        {
+          "client_id": "900352737743-vc0mag0dm6j6onak34fhq58k8qfqsu8k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlWW64a3Jk4wNOtNgW24cmayau3C-qvAU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "900352737743-vc0mag0dm6j6onak34fhq58k8qfqsu8k.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "900352737743-0l1dlrhk7s312mpg3q4jjopqsc5a3rlr.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.appgemz.xstock"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

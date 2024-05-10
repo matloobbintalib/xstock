@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/modules/home/dialogs/item_detail_dialog.dart';
+import 'package:xstock/modules/home/dialogs/new_group_dialog.dart';
+import 'package:xstock/modules/home/models/group_model.dart';
 import 'package:xstock/modules/home/widgets/group_widget.dart';
 import 'package:xstock/modules/settings/pages/settings_page.dart';
 import 'package:xstock/ui/input/input_field.dart';
@@ -18,6 +20,18 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   TextEditingController searchController = TextEditingController();
 
+  List<GroupModel> groups = [
+    GroupModel(
+      id: 1,
+      title: "Default Group",
+      isExpandable: true
+    ),
+    GroupModel(
+      id: 2,
+      title: "Group Name",
+      isExpandable: true
+    ),
+  ];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,7 +50,11 @@ class _HomePageState extends State<HomePage> {
                 ),
                 Spacer(),
                 IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      showDialog(context: (context), builder: (context){
+                        return NewGroupDialog();
+                      });
+                    },
                     icon:
                         SvgPicture.asset("assets/images/svg/ic_add_group.svg")),
                 IconButton(
@@ -70,7 +88,7 @@ class _HomePageState extends State<HomePage> {
             ),
             Expanded(
                 child: ListView.builder(
-                    itemCount: 2,
+                    itemCount: groups.length,
                     itemBuilder: (context, index) {
                       return OnClick(onTap: () {
                         showDialog(
@@ -79,7 +97,14 @@ class _HomePageState extends State<HomePage> {
                               return ItemDetailDialog();
                             });
                       },
-                      child: GroupWidget());
+                      child: GroupWidget(groupModel: groups[index], onClick: () {
+                        groups.forEach((element) {
+                          if (element.id == groups[index].id) {
+                            element.isExpandable = !element.isExpandable;
+                          }
+                        });
+                        setState(() {});
+                      },));
                     })),
           ],
         ),

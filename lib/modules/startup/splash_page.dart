@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:xstock/config/routes/nav_router.dart';
 import 'package:xstock/modules/authentication/pages/login_page.dart';
+import 'package:xstock/modules/home/pages/home_page.dart';
 import 'package:xstock/modules/startup/welcome_page.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
@@ -29,9 +31,8 @@ class _SplashPageState extends State<SplashPage> {
       child: BlocListener<StartupCubit, StartupState>(
         listener: (context, state) {
           if (state.status == Status.authenticated) {
-            // context.read<UserCubit>().loadUser();
-            // var user = context.read<UserCubit>().state.userModel;
-            // NavRouter.pushAndRemoveUntil(context, Dashboard(userId: user.advisor.userId.toString(),));
+            NavRouter.pushAndRemoveUntilWithAnimation(context, HomePage(),
+                type: PageTransitionType.size, hasAlignment: true);
           } else if (state.status == Status.unauthenticated) {
             NavRouter.pushAndRemoveUntilWithAnimation(context, WelcomePage(),
                 type: PageTransitionType.size, hasAlignment: true);
@@ -41,9 +42,7 @@ class _SplashPageState extends State<SplashPage> {
           backgroundColor: Colors.black,
           body: Center(
             child: Image.asset(
-              AssetPaths.appLogo,
-              width: 184,
-              height: 128,
+                'assets/images/png/splash_video.gif'
             ),
           ),
         ),

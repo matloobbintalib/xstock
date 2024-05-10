@@ -15,7 +15,7 @@ class StartupCubit extends Cubit<StartupState> {
   final SessionRepository _sessionRepository;
 
   void init() async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 5));
 
     bool isLoggedIn = _sessionRepository.isLoggedIn();
     print("isLoggedIn----$isLoggedIn");

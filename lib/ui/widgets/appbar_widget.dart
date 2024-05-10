@@ -5,7 +5,8 @@ import 'package:xstock/utils/utils.dart';
 
 class AppbarWidget extends StatelessWidget {
   final String title;
-  const AppbarWidget({super.key, required this.title});
+  final double fontSize;
+  const AppbarWidget({super.key, required this.title, this.fontSize = 32});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +27,7 @@ class AppbarWidget extends StatelessWidget {
               title,
               textAlign: TextAlign.center,
               style: context.textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.w600, fontSize: 32),
+                  ?.copyWith(fontWeight: FontWeight.w600, fontSize: fontSize),
             ))
       ],
     );

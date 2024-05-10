@@ -1,19 +1,13 @@
-import 'dart:io';
-
-import 'package:flutter/cupertino.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:xstock/config/config.dart';
-import 'package:xstock/constants/app_colors.dart';
-import 'package:xstock/constants/asset_paths.dart';
-import 'package:xstock/modules/authentication/pages/login_page.dart';
 import 'package:xstock/ui/input/input_field.dart';
 import 'package:xstock/ui/widgets/appbar_widget.dart';
-import 'package:xstock/ui/widgets/input_filed_with_title.dart';
-import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
+import 'package:xstock/ui/widgets/toast_loader.dart';
+import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
+import 'package:xstock/utils/validators/email_validator.dart';
 import 'package:xstock/utils/validators/validators.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -61,7 +55,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   validator: Validators.email, label: 'abc@gmail.com', textInputAction: TextInputAction.done),
               SizedBox(height: 30,),
               PrimaryButton(
-                onPressed: () {},
+                onPressed: _forgotPassword,
                 title: 'Send',
                 titleColor: Colors.white,
                 borderColor: context.colorScheme.secondary,
@@ -70,11 +64,34 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                 height: 56,
                 borderRadius: 28,
               ),
-              SizedBox(height:40,)
+              SizedBox(
+                height: 40,
+              )
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _forgotPassword() async {
+    if (emailController.text.trim().isNotEmpty) {
+      if (EmailValidator.validate(emailController.text.trim().toString())) {
+        ToastLoader.show();
+        await FirebaseAuth.instance.sendPasswordResetEmail(
+            email: emailController.text.trim().toString()).then((value) {
+              ToastLoader.remove();
+              emailController.text = '';
+          DisplayUtils.showToast(context, "Reset link has been sent to your email, please check your email");
+        }).onError((error, stackTrace) {
+          ToastLoader.remove();
+          DisplayUtils.showToast(context, error.toString());
+        });
+      } else {
+        DisplayUtils.showToast(context, "Enter a valid email address");
+      }
+    } else {
+      DisplayUtils.showToast(context, "Enter your email address");
+    }
   }
 }
