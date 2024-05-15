@@ -85,13 +85,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           DisplayUtils.showToast(context, "Reset link has been sent to your email, please check your email");
         }).onError((error, stackTrace) {
           ToastLoader.remove();
-          DisplayUtils.showToast(context, error.toString());
+          DisplayUtils.showErrorToast(context, error.toString());
         });
       } else {
-        DisplayUtils.showToast(context, "Enter a valid email address");
+        DisplayUtils.showErrorToast(context, "Enter a valid email address");
       }
     } else {
-      DisplayUtils.showToast(context, "Enter your email address");
+      DisplayUtils.showErrorToast(context, "Enter your email address");
     }
   }
 }

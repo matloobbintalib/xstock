@@ -34,7 +34,7 @@ class AccountTile extends StatelessWidget {
               children: [
                 Text(
                   "Branch Name",
-                  style: context.textTheme.bodyMedium?.copyWith(
+                  style: context.textTheme.bodySmall?.copyWith(
                       color: titleColor.withOpacity(.75),
                       fontWeight: FontWeight.w500),
                 ),
@@ -42,7 +42,7 @@ class AccountTile extends StatelessWidget {
                   model.name,
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                      fontSize: 12,
                       overflow: TextOverflow.ellipsis,
                       color: titleColor),
                   maxLines: 1,
@@ -51,7 +51,7 @@ class AccountTile extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 20,
+            width: 10,
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
@@ -61,7 +61,7 @@ class AccountTile extends StatelessWidget {
             ),
           ),
           SizedBox(
-            width: 30,
+            width: 10,
           ),
           Expanded(
               child: Column(
@@ -70,7 +70,7 @@ class AccountTile extends StatelessWidget {
             children: [
               Text(
                 "Email",
-                style: context.textTheme.bodyMedium?.copyWith(
+                style: context.textTheme.bodySmall?.copyWith(
                     color: titleColor.withOpacity(.75),
                     fontWeight: FontWeight.w500),
               ),
@@ -78,7 +78,7 @@ class AccountTile extends StatelessWidget {
                 model.email,
                 style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: 12,
                     overflow: TextOverflow.ellipsis,
                     color: titleColor),
                 maxLines: 1,

@@ -21,7 +21,7 @@ sealed class Dialogs {
     }
   }
 
-  static Future<void> showDeleteAccountConfirmationDialog(
+  static Future<bool> showDeleteAccountConfirmationDialog(
     BuildContext context,
   ) async {
     final confirmed = await _showConfirmationDialog(
@@ -31,8 +31,9 @@ sealed class Dialogs {
     );
 
     if (confirmed && context.mounted) {
-      // TODO: implement delete account
-      // context.showSnackBar('Request submitted.');
+      return true;
+    }else{
+      return false;
     }
   }
 

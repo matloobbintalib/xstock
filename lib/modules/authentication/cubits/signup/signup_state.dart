@@ -1,6 +1,7 @@
 
 
 import 'package:equatable/equatable.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 
 enum SignupStatus {
   initial,
@@ -15,6 +16,7 @@ class SignupState extends Equatable {
   final bool isAutoValidate;
   final String message;
   final int roleId;
+  final UserModel userModel;
 
   SignupState({
     required this.signupStatus,
@@ -22,6 +24,7 @@ class SignupState extends Equatable {
     required this.isAutoValidate,
     required this.message,
     required this.roleId,
+    required this.userModel
   });
 
   factory SignupState.initial() {
@@ -31,6 +34,7 @@ class SignupState extends Equatable {
       isAutoValidate: false,
       message: '',
       roleId: -1,
+      userModel: UserModel.empty
     );
   }
 
@@ -44,15 +48,17 @@ class SignupState extends Equatable {
     SignupStatus? signupStatus,
     bool? isPasswordHidden,
     bool? isAutoValidate,
-    String? errorMessage,
+    String? message,
     int? roleId,
+    UserModel? userModel
   }) {
     return SignupState(
       signupStatus: signupStatus ?? this.signupStatus,
       isPasswordHidden: isPasswordHidden ?? this.isPasswordHidden,
       isAutoValidate: isAutoValidate ?? this.isAutoValidate,
-      message: errorMessage ?? this.message,
+      message: message ?? this.message,
       roleId: roleId ?? this.roleId,
+      userModel: userModel ?? this.userModel
     );
   }
 }

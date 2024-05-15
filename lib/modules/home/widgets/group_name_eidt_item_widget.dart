@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/modules/home/models/group_model.dart';
 import 'package:xstock/modules/home/models/group_name_item_model.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
 class GroupNameEditItemWidget extends StatelessWidget {
-  final GroupNameItemModel model;
+  final GroupModel model;
 
   const GroupNameEditItemWidget({super.key, required this.model});
 

@@ -6,6 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/authentication/pages/login_page.dart';
+import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
 import 'package:xstock/modules/common/repo/session_repository.dart';
 import 'package:xstock/modules/settings/dialogs/add_account_dialog.dart';
 import 'package:xstock/modules/settings/dialogs/import_from_cvs_dialog.dart';
@@ -25,6 +27,8 @@ import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/ui/widgets/toast_loader.dart';
 import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
+import 'package:firebase_admin/firebase_admin.dart';
+import 'package:firebase_admin/src/auth/user_record.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -34,7 +38,8 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  SessionRepository sessionRepository = sl<SessionRepository>();
+  UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -66,13 +71,15 @@ class _SettingsPageState extends State<SettingsPage> {
                       spacing: 12,
                       foregroundColor: Colors.white,
                       icon: 'assets/images/svg/ic_delete.svg',
-                      onPressed: (BuildContext context) {},
+                      onPressed: (BuildContext context) {
+                        DisplayUtils.showToast(context, 'title');
+                      },
                     )
                   ],
                 ),
                 child: AccountTile(
                   model: AccountTitleModel(
-                      name: "jone deper", email: "jone@deper.one", id: 1),
+                      name: userAccountRepository.getUserFromDb().branch_name, email: userAccountRepository.getUserFromDb().email, id: userAccountRepository.getUserFromDb().user_id),
                 ),
               ),
               SizedBox(
@@ -84,7 +91,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         context: context,
                         builder: (BuildContext context) {
                           return SwitchAccountDialog();
-                        });
+                        }).then((value) {
+                          setState(() {
+
+                          });
+                    });
                   },
                   child: Image.asset("assets/images/png/switch_button.png")),
               SizedBox(
@@ -141,10 +152,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     if(isLogged){
                       ToastLoader.show();
                       await FirebaseAuth.instance.signOut().then((value)async {
-                        await sessionRepository.setLoggedIn(false);
+                        await userAccountRepository.logout();
                         ToastLoader.remove();
                         DisplayUtils.showToast(context, 'Logout successfully');
-                        NavRouter.pushAndRemoveUntil(context, AuthPage());
+                        NavRouter.pushAndRemoveUntil(
+                            context, LoginPage());
                       }).onError((error, stackTrace) {
                         ToastLoader.remove();
                         DisplayUtils.showToast(context, error.toString());

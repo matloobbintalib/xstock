@@ -1,35 +1,167 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:xstock/config/routes/nav_router.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
+import 'package:xstock/modules/home/cubits/group_cubit/groups_cubit.dart';
+import 'package:xstock/modules/home/cubits/group_cubit/groups_state.dart';
 import 'package:xstock/modules/home/dialogs/color_chooser_dialog.dart';
+import 'package:xstock/modules/home/dialogs/delete_dialog.dart';
 import 'package:xstock/modules/home/dialogs/new_group_dialog.dart';
+import 'package:xstock/modules/home/models/group_model.dart';
 import 'package:xstock/modules/home/models/group_name_item_model.dart';
+import 'package:xstock/modules/home/models/item_model.dart';
 import 'package:xstock/modules/home/widgets/group_name_eidt_item_widget.dart';
 import 'package:xstock/ui/input/input_field.dart';
 import 'package:xstock/ui/widgets/appbar_widget.dart';
+import 'package:xstock/ui/widgets/loading_indicator.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
+import 'package:xstock/ui/widgets/toast_loader.dart';
+import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
-class EditItemPage extends StatefulWidget {
-  const EditItemPage({super.key});
+class EditItemPage extends StatelessWidget {
+  final ItemModel itemModel;
+  final String groupDocId;
+
+  const EditItemPage(
+      {super.key, required this.itemModel, required this.groupDocId});
 
   @override
-  State<EditItemPage> createState() => _EditItemPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => GroupsCubit(),
+      child: EditItemPageView(
+        itemModel: itemModel,
+        groupDocId: groupDocId,
+      ),
+    );
+  }
 }
 
-class _EditItemPageState extends State<EditItemPage> {
-  TextEditingController inputCountController = TextEditingController();
-  List<GroupNameItemModel> groupNameItems = [
-    GroupNameItemModel(id: 1, title: 'Group 1', isSelected: true),
-    GroupNameItemModel(id: 2, title: 'Group 2'),
-    GroupNameItemModel(id: 3, title: 'Group 3'),
-    GroupNameItemModel(id: 4, title: 'Group 4'),
-    GroupNameItemModel(id: 5, title: 'Group 5'),
-    GroupNameItemModel(id: 6, title: 'Group 6'),
-  ];
+class EditItemPageView extends StatefulWidget {
+  final ItemModel itemModel;
+  final String groupDocId;
 
+  const EditItemPageView(
+      {super.key, required this.itemModel, required this.groupDocId});
+
+  @override
+  State<EditItemPageView> createState() => _EditItemPageViewState();
+}
+
+class _EditItemPageViewState extends State<EditItemPageView> {
+  TextEditingController itemNameController = TextEditingController();
+  UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
+  late Stream<QuerySnapshot> groupsStream;
+  CollectionReference items = FirebaseFirestore.instance.collection('items');
+  String groupId = '';
   Color color = AppColors.lightGreen;
+  List<GroupModel> groupNameItems = [];
+
+  void addItem(String colorCode) async {
+    ToastLoader.show();
+    await items.add({
+      'group_id': groupId,
+      'color_code': colorCode,
+      "item_name": itemNameController.text.trim().toString(),
+      "item_count": 0
+    }).then((value) {
+      ToastLoader.remove();
+      DisplayUtils.showToast(context, 'Item added successfully');
+      NavRouter.pop(context);
+    }).onError((error, stackTrace) {
+      ToastLoader.remove();
+      DisplayUtils.showToast(context, error.toString());
+    });
+  }
+
+  Future<void> updateItemName(String name, String id) {
+    CollectionReference itemsList =
+        FirebaseFirestore.instance.collection('items');
+    return itemsList
+        .doc(id)
+        .update({'item_name': name})
+        .then((value) {})
+        .catchError((error) {
+          DisplayUtils.showErrorToast(context, error.message);
+        });
+  }
+
+  Future<void> updateItemGroup(String id, String groupId) {
+    CollectionReference itemsList =
+        FirebaseFirestore.instance.collection('items');
+    return itemsList
+        .doc(id)
+        .update({'group_id': groupId})
+        .then((value) {})
+        .catchError((error) {
+          DisplayUtils.showErrorToast(context, error.message);
+        });
+  }
+
+  Future<void> deleteItem(String id) {
+    CollectionReference itemsList =
+        FirebaseFirestore.instance.collection('items');
+    ToastLoader.show();
+    return itemsList.doc(id).delete().then((value) {
+      ToastLoader.remove();
+      DisplayUtils.showToast(context, 'Item deleted successfully');
+      NavRouter.pop(context);
+    }).catchError((error) {
+      ToastLoader.remove();
+      DisplayUtils.showErrorToast(context, 'Failed to Delete Item');
+    });
+  }
+
+  Future<void> updateItemColor(String id, String color) {
+    CollectionReference itemsList =
+        FirebaseFirestore.instance.collection('items');
+    return itemsList
+        .doc(id)
+        .update({'color_code': color})
+        .then((value) {})
+        .catchError((error) {
+          DisplayUtils.showErrorToast(context, error.message);
+        });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    color = parseColor(widget.itemModel.itemColor);
+    itemNameController.text = widget.itemModel.itemName;
+    groupsStream = FirebaseFirestore.instance
+        .collection('groups')
+        .where('user_id',
+            isEqualTo: userAccountRepository.getUserFromDb().user_id)
+        .snapshots();
+  }
+
+  Color parseColor(String colorString) {
+    // Extract hexadecimal color value using regular expression
+    RegExp regex = RegExp(r"0x([\da-fA-F]+)");
+    String? hex = regex.stringMatch(colorString);
+
+    if (hex != null) {
+      // Remove "0x" prefix
+      hex = hex.replaceAll("0x", "");
+
+      // Parse hexadecimal value to integer
+      int colorValue = int.parse(hex, radix: 16);
+
+      // Construct Color object using parsed value
+      return Color(colorValue);
+    } else {
+      // Return a default color in case of invalid input
+      return Colors.transparent;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +200,8 @@ class _EditItemPageState extends State<EditItemPage> {
                                 onChangeColor: (Color color) {
                                   setState(() {
                                     this.color = color;
+                                    updateItemColor(
+                                        widget.itemModel.id, color.toString());
                                   });
                                 },
                               );
@@ -87,7 +221,7 @@ class _EditItemPageState extends State<EditItemPage> {
                     ),
                     Expanded(
                       child: InputField(
-                          controller: inputCountController,
+                          controller: itemNameController,
                           label: 'Item name: Amount of stock',
                           borderRadius: 20,
                           horizontalPadding: 0,
@@ -130,25 +264,55 @@ class _EditItemPageState extends State<EditItemPage> {
                           ],
                         )),
                     Expanded(
-                      child: ListView.builder(
-                          padding: EdgeInsets.only(left: 4),
-                          itemCount: groupNameItems.length,
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (context, index) {
-                            return OnClick(
-                                onTap: () {
-                                  groupNameItems.forEach((element) {
-                                    if (element.id ==
-                                        groupNameItems[index].id) {
-                                      element.isSelected = !element.isSelected;
-                                    } else {
-                                      element.isSelected = false;
-                                    }
-                                  });
-                                  setState(() {});
-                                },
-                                child: GroupNameEditItemWidget(
-                                    model: groupNameItems[index]));
+                      child: StreamBuilder<QuerySnapshot>(
+                          stream: groupsStream,
+                          builder: (BuildContext context,
+                              AsyncSnapshot<QuerySnapshot> snapshot) {
+                            if (snapshot.hasError) {
+                              return Center(
+                                child: Text(snapshot.error.toString()),
+                              );
+                            }
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return Center(
+                                child: CircularLoadingIndicator(),
+                              );
+                            }
+                            groupNameItems.clear();
+                            snapshot.data!.docs
+                                .map((DocumentSnapshot document) {
+                              Map a = document.data() as Map<String, dynamic>;
+                              groupNameItems.add(GroupModel(
+                                  id: document.id,
+                                  userId: a['user_id'],
+                                  title: a['group_name'],
+                                  isSelected: widget.groupDocId == document.id,
+                                  isExpandable: a['is_extendable']));
+                            }).toList();
+                            context
+                                .read<GroupsCubit>()
+                                .initialList(groupNameItems);
+                            return BlocBuilder<GroupsCubit, GroupsState>(
+                              builder: (context, state) {
+                                return ListView.builder(
+                                    itemCount: state.groups.length,
+                                    scrollDirection: Axis.horizontal,
+                                    itemBuilder: (context, index) {
+                                      return OnClick(
+                                          onTap: () {
+                                            context
+                                                .read<GroupsCubit>()
+                                                .updateGroupSelection(
+                                                    state.groups[index].id);
+                                            updateItemGroup(widget.itemModel.id,
+                                                state.groups[index].id);
+                                          },
+                                          child: GroupNameEditItemWidget(
+                                              model: state.groups[index]));
+                                    });
+                              },
+                            );
                           }),
                     ),
                   ],
@@ -182,7 +346,18 @@ class _EditItemPageState extends State<EditItemPage> {
                 height: 26,
               ),
               PrimaryButton(
-                onPressed: () {},
+                onPressed: () {
+                  showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return DeleteDialog(
+                          title: 'item',
+                          onConfirmDelete: () async {
+                            await deleteItem(widget.itemModel.id);
+                          },
+                        );
+                      });
+                },
                 title: 'Delete',
                 borderRadius: 10,
                 backgroundColor: AppColors.red,

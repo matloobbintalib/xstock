@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
 import 'package:xstock/ui/input/input_field.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
+import 'package:xstock/ui/widgets/toast_loader.dart';
+import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
 class NewGroupDialog extends StatefulWidget {
@@ -14,6 +19,24 @@ class NewGroupDialog extends StatefulWidget {
 
 class _NewGroupDialogState extends State<NewGroupDialog> {
   TextEditingController nameController = TextEditingController();
+  CollectionReference groups = FirebaseFirestore.instance.collection('groups');
+  UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
+
+  void addGroup() async{
+    ToastLoader.show();
+    await groups.add({
+      'group_name': nameController.text.trim().toString(),
+      'is_extendable': true,
+      "user_id": userAccountRepository.getUserFromDb().user_id
+    }).then((value) {
+      ToastLoader.remove();
+      DisplayUtils.showToast(context, 'Group added successfully');
+      NavRouter.pop(context);
+    }).onError((error, stackTrace){
+      ToastLoader.remove();
+      DisplayUtils.showToast(context, error.toString());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +78,7 @@ class _NewGroupDialogState extends State<NewGroupDialog> {
                 borderRadius: 10,
                 fontSize: 12,
                 fillColor: Colors.black,
+                keyboardType: TextInputType.name,
                 textInputAction: TextInputAction.done),
             SizedBox(height: 16,),
             Row(
@@ -75,7 +99,9 @@ class _NewGroupDialogState extends State<NewGroupDialog> {
                 ),
                 Expanded(
                   child: PrimaryButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      addGroup();
+                    },
                     title: 'Okay',
                     height: 50,
                     borderRadius: 10,

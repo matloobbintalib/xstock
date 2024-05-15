@@ -27,7 +27,7 @@ class CircularCachedImage extends StatelessWidget {
       height: height,
       child: CachedNetworkImage(
         imageUrl: imageUrl,
-        placeholder: (context, url) => const Center(child: LoadingIndicator(),),
+        placeholder: (context, url) => const Center(child: CircularLoadingIndicator(),),
         imageBuilder: (context, imageProvider) => Container(
           width: width,
           height: height,

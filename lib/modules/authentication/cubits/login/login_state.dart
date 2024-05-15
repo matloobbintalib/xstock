@@ -44,14 +44,14 @@ class LoginState extends Equatable {
     LoginStatus? loginStatus,
     bool? isPasswordHidden,
     bool? isAutoValidate,
-    String? errorMessage,
+    String? message,
     int? roleId,
   }) {
     return LoginState(
       loginStatus: loginStatus ?? this.loginStatus,
       isPasswordHidden: isPasswordHidden ?? this.isPasswordHidden,
       isAutoValidate: isAutoValidate ?? this.isAutoValidate,
-      message: errorMessage ?? this.message,
+      message: message ?? this.message,
       roleId: roleId ?? this.roleId,
     );
   }

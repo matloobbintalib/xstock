@@ -1,6 +1,16 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:xstock/config/routes/nav_router.dart';
+import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/authentication/pages/login_page.dart';
+import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
+import 'package:xstock/ui/dialogs/dialogs.dart';
+import 'package:xstock/ui/widgets/on_click.dart';
+import 'package:xstock/ui/widgets/toast_loader.dart';
+import 'package:xstock/utils/display/display_utils.dart';
 
 
 /// Signature for [CustomSlidableAction.onPressed].
@@ -18,7 +28,7 @@ class CustomSlidableAction extends StatelessWidget {
   /// be null.
   ///
   /// The [flex] argument must also be greater than 0.
-  const CustomSlidableAction({
+  CustomSlidableAction({
     Key? key,
     this.flex = _kFlex,
     this.backgroundColor = _kBackgroundColor,
@@ -30,6 +40,8 @@ class CustomSlidableAction extends StatelessWidget {
     required this.child,
   })  : assert(flex > 0),
         super(key: key);
+
+  UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
 
   /// {@template slidable.actions.flex}
   /// The flex factor to use for this child.
@@ -84,17 +96,50 @@ class CustomSlidableAction extends StatelessWidget {
   /// Typically the action's icon or label.
   final Widget child;
 
+  Future<void> deleteUser(id, BuildContext context) async{
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('user_id', isEqualTo: id)
+        .get();
+    if (querySnapshot.docs.isNotEmpty) {
+      CollectionReference users = FirebaseFirestore.instance.collection('users');
+      return users.doc(querySnapshot.docs.first.id).delete().then((value) async {
+        await FirebaseAuth.instance.signOut().then((value)async {
+          await userAccountRepository.logout();
+          ToastLoader.remove();
+          DisplayUtils.showToast(context, 'User deleted successfully');
+          NavRouter.pushAndRemoveUntil(
+              context, LoginPage());
+        }).onError((error, stackTrace) {
+          ToastLoader.remove();
+          DisplayUtils.showToast(context, error.toString());
+        });
+      }).catchError((error) {
+        DisplayUtils.showErrorToast(context, 'Failed to Delete User');
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 60,
-      width: 60,
-      decoration: BoxDecoration(
-        color:Colors.red,
-        borderRadius: BorderRadius.circular(16)
+    return OnClick(
+      onTap: () async {
+        bool isLogged = await Dialogs.showDeleteAccountConfirmationDialog(context);
+        if(isLogged){
+          ToastLoader.show();
+          deleteUser(userAccountRepository.getUserFromDb().user_id, context);
+        }
+      },
+      child: Container(
+        height: 60,
+        width: 60,
+        decoration: BoxDecoration(
+          color:Colors.red,
+          borderRadius: BorderRadius.circular(16)
+        ),
+        padding: EdgeInsets.all(18),
+        child: child,
       ),
-      padding: EdgeInsets.all(18),
-      child: child,
     );
   }
 

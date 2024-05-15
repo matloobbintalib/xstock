@@ -1,5 +1,5 @@
 class GroupNameItemModel{
-  final int id;
+  final String id;
   final String title;
   bool isSelected;
 

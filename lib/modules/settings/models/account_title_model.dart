@@ -1,5 +1,5 @@
 class AccountTitleModel{
-  final int id;
+  final String id;
   final String name;
   final String email;
   bool isSelected;

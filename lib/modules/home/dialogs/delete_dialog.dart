@@ -1,11 +1,22 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
+import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
-class DeleteDialog extends StatelessWidget {
-  const DeleteDialog({super.key});
+class DeleteDialog extends StatefulWidget {
+  final String title;
+  final VoidCallback onConfirmDelete;
+  const DeleteDialog({super.key, required this.title, required this.onConfirmDelete});
+
+  @override
+  State<DeleteDialog> createState() => _DeleteDialogState();
+}
+
+class _DeleteDialogState extends State<DeleteDialog> {
+
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +40,7 @@ class DeleteDialog extends StatelessWidget {
                   color: context.colorScheme.primary),
             ),
             Text(
-              "Are you sure you want to\ndelete this?",
+              "Are you sure you want to\ndelete this ${widget.title}?",
               style: context.textTheme.bodySmall
                   ?.copyWith(fontSize: 16, fontWeight: FontWeight.w300),
               textAlign: TextAlign.center,
@@ -55,7 +66,10 @@ class DeleteDialog extends StatelessWidget {
                 ),
                 Expanded(
                   child: PrimaryButton(
-                    onPressed: () {},
+                    onPressed: ()  {
+                      widget.onConfirmDelete();
+                      NavRouter.pop(context);
+                    },
                     title: 'Okay',
                     height: 50,
                     borderRadius: 10,

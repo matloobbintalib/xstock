@@ -6,7 +6,7 @@ class ToastLoader {
   ToastLoader._();
 
   static void show() {
-    BotToast.showCustomLoading(toastBuilder: (_) => const LoadingIndicator());
+    BotToast.showCustomLoading(toastBuilder: (_) => const CircularLoadingIndicator());
   }
 
   static void remove() {

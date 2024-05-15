@@ -1,19 +1,30 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:xstock/config/routes/nav_router.dart';
 import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/modules/home/dialogs/stock_image_dialog.svg.dart';
 import 'package:xstock/modules/home/dialogs/upload_picture_dialog.dart';
+import 'package:xstock/modules/home/models/item_detail_model.dart';
+import 'package:xstock/modules/home/models/item_model.dart';
 import 'package:xstock/modules/home/pages/edit_item_page.dart';
 import 'package:xstock/ui/input/input_field.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/ui/widgets/remember_me_widget.dart';
+import 'package:xstock/ui/widgets/toast_loader.dart';
+import 'package:xstock/utils/custom_date_time_picker.dart';
 import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
 class ItemDetailDialog extends StatefulWidget {
-  const ItemDetailDialog({super.key});
+  final ItemModel itemModel;
+  final String groupDocId;
+
+  const ItemDetailDialog(
+      {super.key, required this.itemModel, required this.groupDocId});
 
   @override
   State<ItemDetailDialog> createState() => _ItemDetailDialogState();
@@ -23,24 +34,117 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   TextEditingController inputCountController = new TextEditingController();
-  TextEditingController minimumAlertCountController = new TextEditingController();
+  TextEditingController minimumAlertCountController =
+      new TextEditingController();
   TextEditingController dateController = new TextEditingController();
+  CollectionReference itemDetails =
+      FirebaseFirestore.instance.collection('item_details');
+  CollectionReference items = FirebaseFirestore.instance.collection('items');
   int _selectedTabIndex = 0;
+  bool isEnableExpiry = false;
+  int itemCount = 0;
+
   final _tabs = [
-    Tab(text: 'Add Quality'),
-    Tab(text: 'Reduce Quality'),
+    Tab(text: 'Add Quantity'),
+    Tab(text: 'Reduce Quantity'),
   ];
 
   @override
   void initState() {
-    _tabController = TabController(length: 2, vsync: this);
     super.initState();
+    itemCount = widget.itemModel.itemCount;
+    inputCountController.text = widget.itemModel.itemCount.toString();
+    _tabController = TabController(length: 2, vsync: this);
+    getItemById(widget.itemModel.id);
   }
 
   @override
   void dispose() {
     super.dispose();
     _tabController.dispose();
+  }
+
+  void addItemDetails() async {
+    ToastLoader.show();
+    updateItemCount(itemCount, widget.itemModel.id);
+    DocumentReference docRef = itemDetails.doc(widget.itemModel.id);
+    await docRef.set({
+      'group_id': widget.itemModel.groupId,
+      'item_id': widget.itemModel.id,
+      'color_code': widget.itemModel.itemColor,
+      "item_name": widget.itemModel.itemName,
+      "item_count": itemCount,
+      "is_enable_expiry": isEnableExpiry,
+      "current_date":
+          changeDateTimeFormat(DateTime.now(), 'MM/dd/yyyy  hh:ss a'),
+      "expiry_date":
+          isEnableExpiry ? dateController.text.trim().toString() : '',
+      "minimum_stock_alert": minimumAlertCountController.text.toString(),
+      "stock_image": '',
+    }).then((value) {
+      ToastLoader.remove();
+      DisplayUtils.showToast(context, 'Item details added successfully');
+      NavRouter.pop(context);
+    }).onError((error, stackTrace) {
+      ToastLoader.remove();
+      DisplayUtils.showToast(context, error.toString());
+    });
+  }
+
+  void getItemById(String documentId) async {
+    try {
+      ToastLoader.show();
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('item_details')
+          .doc(documentId)
+          .get();
+      if (docSnapshot.exists) {
+        String jsonString = json.encode(docSnapshot.data());
+        print(jsonString);
+        Map<String, dynamic> jsonMap = json.decode(jsonString);
+        Item item = Item.fromJson(jsonMap);
+        minimumAlertCountController.text = item.minimumStockAlert.toString();
+        dateController.text = item.expiryDate.toString();
+        isEnableExpiry = item.isEnableExpiry;
+        ToastLoader.remove();
+      } else {
+        ToastLoader.remove();
+        DisplayUtils.showErrorToast(context, 'Document does not exist.');
+      }
+    } catch (e) {
+      ToastLoader.remove();
+      DisplayUtils.showErrorToast(context, 'Error getting document: $e');
+    }
+  }
+
+  Future<void> updateItemCount(int count, String id) {
+    return items
+        .doc(id)
+        .update({'item_count': count})
+        .then((value) {})
+        .catchError((error) {
+          DisplayUtils.showErrorToast(context, error.message);
+        });
+  }
+
+  Color parseColor(String colorString) {
+    // Extract hexadecimal color value using regular expression
+    RegExp regex = RegExp(r"0x([\da-fA-F]+)");
+    String? hex = regex.stringMatch(colorString);
+
+    if (hex != null) {
+      // Remove "0x" prefix
+      hex = hex.replaceAll("0x", "");
+
+      // Parse hexadecimal value to integer
+      int colorValue = int.parse(hex, radix: 16);
+
+      // Construct Color object using parsed value
+      return Color(colorValue);
+    } else {
+      // Return a default color in case of invalid input
+      return Colors.transparent;
+    }
   }
 
   @override
@@ -60,28 +164,35 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                   borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20)),
-                  color: AppColors.lightGreen),
+                  color: parseColor(widget.itemModel.itemColor)),
               padding: EdgeInsets.only(left: 20, right: 16) +
                   EdgeInsets.symmetric(vertical: 12),
               child: Row(
                 children: [
                   Text(
-                    '03',
+                    itemCount.toString(),
                     style: context.textTheme.headlineMedium
                         ?.copyWith(color: Colors.black),
                   ),
                   Expanded(
                       child: Text(
-                    'Item Name',
+                    widget.itemModel.itemName,
                     textAlign: TextAlign.center,
                     style: context.textTheme.headlineMedium?.copyWith(
                         color: Colors.black, fontWeight: FontWeight.w600),
                   )),
-                  OnClick(onTap: () {
-                    NavRouter.pop(context);
-                    NavRouter.pushWithAnimation(context, EditItemPage());
-                  },
-                  child: SvgPicture.asset("assets/images/svg/ic_edit_item.svg"))
+                  OnClick(
+                      onTap: () {
+                        NavRouter.pop(context);
+                        NavRouter.pushWithAnimation(
+                            context,
+                            EditItemPage(
+                              itemModel: widget.itemModel,
+                              groupDocId: widget.groupDocId,
+                            ));
+                      },
+                      child: SvgPicture.asset(
+                          "assets/images/svg/ic_edit_item.svg"))
                 ],
               ),
             ),
@@ -90,7 +201,7 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
               child: Column(
                 children: [
                   Text(
-                    '4/15/2024  05:00 PM',
+                    changeDateTimeFormat(DateTime.now(), 'MM/dd/yyyy  hh:ss a'),
                     style:
                         context.textTheme.headlineSmall?.copyWith(fontSize: 12),
                   ),
@@ -137,14 +248,35 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                       controller: inputCountController,
                       label: 'Input Count',
                       verticalPadding: 18,
+                      readOnly: true,
                       borderRadius: 10,
                       borderColor: Colors.black,
                       fillColor: Colors.black,
                       keyboardType: TextInputType.number,
                       prefixIcon: Padding(
                         padding: const EdgeInsets.only(left: 16, right: 12),
-                        child: SvgPicture.asset(
-                            _selectedTabIndex == 0?"assets/images/svg/ic_add_item.svg":'assets/images/svg/ic_minus.svg'),
+                        child: OnClick(
+                          onTap: () {
+                            if (_selectedTabIndex == 0) {
+                              itemCount++;
+                              setState(() {
+                                inputCountController.text =
+                                    itemCount.toString();
+                              });
+                            } else if (_selectedTabIndex == 1) {
+                              if (itemCount > 0) {
+                                itemCount--;
+                                setState(() {
+                                  inputCountController.text =
+                                      itemCount.toString();
+                                });
+                              }
+                            }
+                          },
+                          child: SvgPicture.asset(_selectedTabIndex == 0
+                              ? "assets/images/svg/ic_add_item.svg"
+                              : 'assets/images/svg/ic_minus.svg'),
+                        ),
                       ),
                       textInputAction: TextInputAction.done),
                   Row(
@@ -164,7 +296,8 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                         },
                         child: Padding(
                           padding: const EdgeInsets.all(14.0),
-                          child: SvgPicture.asset("assets/images/svg/ic_take_picture.svg"),
+                          child: SvgPicture.asset(
+                              "assets/images/svg/ic_take_picture.svg"),
                         ),
                       )
                     ],
@@ -182,9 +315,15 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                     height: 14,
                   ),
                   RememberMeWidget(
+                    isSelected: isEnableExpiry,
                     title: "Enable Expiry Date Alerts(Optional)",
                     titleColor: Colors.white,
                     checkBoxSize: 20,
+                    onTab: (value) {
+                      setState(() {
+                        isEnableExpiry = value;
+                      });
+                    },
                     checkColor: AppColors.fieldColor,
                     fontSize: 14,
                   ),
@@ -194,6 +333,11 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                   InputField(
                       controller: dateController,
                       label: 'Select Date',
+                      onTap: () async {
+                        String date =
+                            await CustomDateTimePicker.selectDate(context);
+                        dateController.text = date;
+                      },
                       verticalPadding: 18,
                       readOnly: true,
                       borderRadius: 10,
@@ -229,7 +373,25 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                       ),
                       Expanded(
                         child: PrimaryButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            if (minimumAlertCountController.text
+                                .trim()
+                                .isNotEmpty) {
+                              if (isEnableExpiry) {
+                                if (dateController.text.trim().isEmpty) {
+                                  DisplayUtils.showErrorToast(
+                                      context, "Select expiry date");
+                                } else {
+                                  addItemDetails();
+                                }
+                              } else {
+                                addItemDetails();
+                              }
+                            } else {
+                              DisplayUtils.showErrorToast(
+                                  context, "Enter minimum stock alert count");
+                            }
+                          },
                           title: 'Confirm',
                           height: 50,
                           borderRadius: 10,
@@ -245,6 +407,47 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
           ],
         ),
       ),
+    );
+  }
+}
+
+class Item {
+  final int itemCount;
+  final String currentDate;
+  final String itemId;
+  final String groupId;
+  final int minimumStockAlert;
+  final String stockImage;
+  final String expiryDate;
+  final String itemName;
+  final String colorCode;
+  final bool isEnableExpiry;
+
+  Item({
+    required this.itemCount,
+    required this.currentDate,
+    required this.itemId,
+    required this.groupId,
+    required this.minimumStockAlert,
+    required this.stockImage,
+    required this.expiryDate,
+    required this.itemName,
+    required this.colorCode,
+    required this.isEnableExpiry,
+  });
+
+  factory Item.fromJson(Map<String, dynamic> json) {
+    return Item(
+      itemCount: json['item_count'],
+      currentDate: json['current_date'],
+      itemId: json['item_id'],
+      groupId: json['group_id'],
+      minimumStockAlert: int.parse(json['minimum_stock_alert']),
+      stockImage: json['stock_image'],
+      expiryDate: json['expiry_date'],
+      itemName: json['item_name'],
+      colorCode: json['color_code'],
+      isEnableExpiry: json['is_enable_expiry'],
     );
   }
 }

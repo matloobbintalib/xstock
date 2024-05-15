@@ -1,37 +1,31 @@
 
 class UserModel {
-  String name;
+  String branch_name;
   String email;
-  String profilePicture;
-  String mobileNumber;
+  String user_id;
 
   UserModel({
-    required this.name,
+    required this.branch_name,
     required this.email,
-    required this.profilePicture,
-    required this.mobileNumber,
+    required this.user_id,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        name: json["name"],
+        branch_name: json["branch_name"],
         email: json["email"],
-        profilePicture:
-            json["profile_picture"] == null ? '' : json["profile_picture"],
-        mobileNumber: json["mobile_number"],
+        user_id: json["user_id"]
       );
 
   Map<String, dynamic> toJson() =>
       {
-        "name": name,
+        "branch_name": branch_name,
         "email": email,
-        "profile_picture": profilePicture,
-        "mobile_number": mobileNumber,
+        "user_id": user_id,
       };
 
   static UserModel empty = UserModel(
-    name: '',
+    branch_name: '',
     email: '',
-    profilePicture: '',
-    mobileNumber: '',
+    user_id: '',
   );
 }
