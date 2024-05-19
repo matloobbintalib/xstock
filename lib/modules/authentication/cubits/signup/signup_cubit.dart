@@ -10,7 +10,7 @@ class SignupCubit extends Cubit<SignupState> {
   SignupCubit(this.sessionRepository)
       : super(SignupState.initial());
   SessionRepository sessionRepository;
-  CollectionReference students = FirebaseFirestore.instance.collection('users');
+  CollectionReference users = FirebaseFirestore.instance.collection('users');
 
   void toggleShowPassword() => emit(state.copyWith(
         isPasswordHidden: !state.isPasswordHidden,
@@ -26,36 +26,47 @@ class SignupCubit extends Cubit<SignupState> {
       String branchName, String email, String password, String userId) async {
     emit(state.copyWith(signupStatus: SignupStatus.loading));
     try {
-      await students.add({
-        'branch_name': branchName,
-        'email': email,
-        "user_id": userId
-      }).then((value) async {
-        UserCredential credential = await FirebaseAuth.instance
-            .createUserWithEmailAndPassword(email: email, password: password);
-        if (credential.user != null) {
-          await credential.user!
-              .updateProfile(displayName: branchName)
-              .then((value) async {
-            await sessionRepository.setLoggedIn(true);
+
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+      if(querySnapshot.docs.isEmpty){
+        await users.add({
+          'branch_name': branchName,
+          'email': email,
+          "user_id": userId
+        }).then((value) async {
+          UserCredential credential = await FirebaseAuth.instance
+              .createUserWithEmailAndPassword(email: email, password: password);
+          if (credential.user != null) {
+            await credential.user!
+                .updateProfile(displayName: branchName)
+                .then((value) async {
+              await sessionRepository.setLoggedIn(true);
+              emit(state.copyWith(
+                  signupStatus: SignupStatus.success,
+                  message: "Register successfully!",
+                  userModel: UserModel(
+                      branch_name: branchName, email: email, user_id: userId)));
+            }).onError((error, stackTrace) {
+              emit(state.copyWith(
+                  signupStatus: SignupStatus.error, message: error.toString()));
+            });
+          } else {
             emit(state.copyWith(
-                signupStatus: SignupStatus.success,
-                message: "Register successfully!",
-                userModel: UserModel(
-                    branch_name: branchName, email: email, user_id: userId)));
-          }).onError((error, stackTrace) {
-            emit(state.copyWith(
-                signupStatus: SignupStatus.error, message: error.toString()));
-          });
-        } else {
+                signupStatus: SignupStatus.error,
+                message: "Something went wrong"));
+          }
+        }).catchError((error) {
           emit(state.copyWith(
-              signupStatus: SignupStatus.error,
-              message: "Something went wrong"));
-        }
-      }).catchError((error) {
+              signupStatus: SignupStatus.error, message: error.toString()));
+        });
+      }else {
         emit(state.copyWith(
-            signupStatus: SignupStatus.error, message: email.toString()));
-      });
+            signupStatus: SignupStatus.error,
+            message: "Account already exists for that email"));
+      }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'week-password') {
         emit(state.copyWith(
@@ -65,6 +76,10 @@ class SignupCubit extends Cubit<SignupState> {
         emit(state.copyWith(
             signupStatus: SignupStatus.error,
             message: "Account already exists for that email"));
+      }else if (e.code == 'network-request-failed') {
+        emit(state.copyWith(
+            signupStatus: SignupStatus.error,
+            message: "Internet connection failed"));
       } else {
         emit(state.copyWith(
             signupStatus: SignupStatus.error, message: e.message));

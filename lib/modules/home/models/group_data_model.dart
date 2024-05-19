@@ -13,4 +13,13 @@ class GroupDataModel {
     };
   }
 
+  factory GroupDataModel.fromJson(Map<String, dynamic> json) {
+    List<dynamic> itemsJson = json['items'];
+    List<ItemDataModel> items = itemsJson.map((itemJson) => ItemDataModel.fromJson(itemJson)).toList();
+    return GroupDataModel(
+      groupName: json['groupName'],
+      items: items,
+    );
+  }
+
 }

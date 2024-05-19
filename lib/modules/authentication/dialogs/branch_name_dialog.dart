@@ -10,35 +10,15 @@ import 'package:xstock/ui/widgets/toast_loader.dart';
 import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
-class NewGroupDialog extends StatefulWidget {
-  const NewGroupDialog({super.key});
+class BranchNameDialog extends StatefulWidget {
+  const BranchNameDialog({super.key});
 
   @override
-  State<NewGroupDialog> createState() => _NewGroupDialogState();
+  State<BranchNameDialog> createState() => _BranchNameDialogState();
 }
 
-class _NewGroupDialogState extends State<NewGroupDialog> {
-  TextEditingController nameController = TextEditingController();
-  CollectionReference groups = FirebaseFirestore.instance.collection('groups');
-  UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
-
-  void addGroup() async{
-    ToastLoader.show();
-    await groups.add({
-      'group_name': nameController.text.trim().toString(),
-      'is_extendable': true,
-      "user_id": userAccountRepository.getUserFromDb().user_id
-    }).then((value) {
-      print(value.id);
-      ToastLoader.remove();
-      DisplayUtils.showToast(context, 'Group added successfully');
-      NavRouter.pop(context);
-    }).onError((error, stackTrace){
-      ToastLoader.remove();
-      DisplayUtils.flutterShowToast( error.toString());
-    });
-  }
-
+class _BranchNameDialogState extends State<BranchNameDialog> {
+  TextEditingController branchNameController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -55,17 +35,17 @@ class _NewGroupDialogState extends State<NewGroupDialog> {
           children: [
             Center(
                 child: Text(
-              "New Group",
-              style: context.textTheme.headlineMedium?.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white),
-            )),
+                  "Branch Name",
+                  style: context.textTheme.headlineMedium?.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white),
+                )),
             SizedBox(
               height: 16,
             ),
             Text(
-              "Input a group name",
+              "Input a branch name",
               style: context.textTheme.bodySmall
                   ?.copyWith(fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
@@ -74,8 +54,8 @@ class _NewGroupDialogState extends State<NewGroupDialog> {
               height: 9,
             ),
             InputField(
-                controller: nameController,
-                label: 'Enter group name',
+                controller: branchNameController,
+                label: 'Enter branch name',
                 borderRadius: 10,
                 fontSize: 12,
                 fillColor: Colors.black,
@@ -86,22 +66,26 @@ class _NewGroupDialogState extends State<NewGroupDialog> {
               children: [
                 Expanded(
                     child: PrimaryButton(
-                  onPressed: () {
-                    NavRouter.pop(context);
-                  },
-                  title: 'Cancel',
-                  height: 50,
-                  borderRadius: 10,
-                  backgroundColor: Colors.black,
-                  borderColor: Colors.black,
-                )),
+                      onPressed: () {
+                        NavRouter.pop(context,'');
+                      },
+                      title: 'Cancel',
+                      height: 50,
+                      borderRadius: 10,
+                      backgroundColor: Colors.black,
+                      borderColor: Colors.black,
+                    )),
                 SizedBox(
                   width: 20,
                 ),
                 Expanded(
                   child: PrimaryButton(
                     onPressed: () {
-                      addGroup();
+                      if (branchNameController.text.isNotEmpty) {
+                        NavRouter.pop(context, branchNameController.text.trim().toString());
+                      }else{
+                        DisplayUtils.flutterShowToast( 'Enter branch name');
+                      }
                     },
                     title: 'Okay',
                     height: 50,

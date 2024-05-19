@@ -4,8 +4,7 @@ class AssetPaths {
 
   ///* ================ Png ================ *///
   static const String logo = 'assets/images/png/logo.png';
-  static const String imagePlaceHolder = 'assets/images/png/placeholder.jpg';
-  static const String imageNotFoundPlaceHolder = 'assets/images/png/image_not_found.jpg';
+  static const String imagePlaceHolder = 'assets/images/png/image_not_found.jpg';
 
   ///* ================ Svg ================ *///
 

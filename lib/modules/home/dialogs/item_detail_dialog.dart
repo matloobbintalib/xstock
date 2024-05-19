@@ -87,7 +87,7 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
       NavRouter.pop(context);
     }).onError((error, stackTrace) {
       ToastLoader.remove();
-      DisplayUtils.showToast(context, error.toString());
+      DisplayUtils.flutterShowToast( error.toString());
     });
   }
 
@@ -109,11 +109,10 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
         ToastLoader.remove();
       } else {
         ToastLoader.remove();
-        DisplayUtils.showErrorToast(context, 'Document does not exist.');
       }
     } catch (e) {
       ToastLoader.remove();
-      DisplayUtils.showErrorToast(context, 'Error getting document: $e');
+      DisplayUtils.flutterShowToast('Error getting document: $e');
     }
   }
 
@@ -123,7 +122,7 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
         .update({'item_count': count})
         .then((value) {})
         .catchError((error) {
-          DisplayUtils.showErrorToast(context, error.message);
+          DisplayUtils.flutterShowToast( error.message);
         });
   }
 
@@ -291,7 +290,7 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                           showDialog(
                               context: context,
                               builder: (BuildContext context) {
-                                return StockImageDialog();
+                                return StockImageDialog(itemModel: widget.itemModel,);
                               });
                         },
                         child: Padding(
@@ -379,8 +378,7 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                                 .isNotEmpty) {
                               if (isEnableExpiry) {
                                 if (dateController.text.trim().isEmpty) {
-                                  DisplayUtils.showErrorToast(
-                                      context, "Select expiry date");
+                                  DisplayUtils.flutterShowToast("Select expiry date");
                                 } else {
                                   addItemDetails();
                                 }
@@ -388,8 +386,7 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                                 addItemDetails();
                               }
                             } else {
-                              DisplayUtils.showErrorToast(
-                                  context, "Enter minimum stock alert count");
+                              DisplayUtils.flutterShowToast("Enter minimum stock alert count");
                             }
                           },
                           title: 'Confirm',

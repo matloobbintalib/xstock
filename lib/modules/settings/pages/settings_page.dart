@@ -1,4 +1,8 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dotted_line/dotted_line.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -9,12 +13,15 @@ import 'package:xstock/core/di/service_locator.dart';
 import 'package:xstock/modules/authentication/pages/login_page.dart';
 import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
 import 'package:xstock/modules/common/repo/session_repository.dart';
+import 'package:xstock/modules/home/models/group_data_model.dart';
+import 'package:xstock/modules/home/models/item_data_model.dart';
 import 'package:xstock/modules/settings/dialogs/add_account_dialog.dart';
 import 'package:xstock/modules/settings/dialogs/import_from_cvs_dialog.dart';
 import 'package:xstock/modules/settings/dialogs/switch_account_dialog.dart';
 import 'package:xstock/modules/settings/dialogs/update_alert_email_dialog.dart';
 import 'package:xstock/modules/settings/dialogs/wipe_data_dialog.dart';
 import 'package:xstock/modules/settings/models/account_title_model.dart';
+import 'package:xstock/modules/settings/pages/load_and_view_csv_page.dart';
 import 'package:xstock/modules/settings/pages/privacy_policy_page.dart';
 import 'package:xstock/modules/settings/widgets/account_tile.dart';
 import 'package:xstock/modules/settings/widgets/phone_varification_widget.dart';
@@ -27,8 +34,8 @@ import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/ui/widgets/toast_loader.dart';
 import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
-import 'package:firebase_admin/firebase_admin.dart';
-import 'package:firebase_admin/src/auth/user_record.dart';
+import 'dart:io';
+import 'package:csv/csv.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -39,7 +46,84 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
+  CollectionReference groups = FirebaseFirestore.instance.collection('groups');
+  CollectionReference items = FirebaseFirestore.instance.collection('items');
 
+
+  List<Map<String, dynamic>> convertToMap1(List<GroupItem> groupItems) {
+    return groupItems.map((item) {
+      return {
+        "name": item.name,
+        "type": item.type,
+        "color": item.color,
+        "count": item.count,
+      };
+    }).toList();
+  }
+
+
+  Future<List<List<dynamic>>> _loadCsvData(String path)  {
+    final file = new File(path).openRead();
+    return  file
+        .transform(utf8.decoder)
+        .transform(new CsvToListConverter())
+        .toList();
+  }
+
+  List<GroupDataModel> convertToObjects(Map<String, List<Map<String, dynamic>>> groupedData) {
+    List<GroupDataModel> groups = [];
+    groupedData.forEach((groupName, itemList) {
+      List<ItemDataModel> items = itemList.map((item) {
+        return ItemDataModel(
+          itemName: item['type'],
+          itemColor: item['color'],
+          itemCount: item['count'],
+        );
+      }).toList();
+      groups.add(GroupDataModel(groupName: groupName, items: items));
+    });
+
+    return groups;
+  }
+
+  Future<void> uploadDataToFireStore(List<GroupDataModel> list) async{
+    list.forEach((element) async{
+      await groups.add({
+        'group_name': element.groupName,
+        'is_extendable': true,
+        "user_id": userAccountRepository.getUserFromDb().user_id
+      }).then((value) {
+        element.items.forEach((item)async {
+          await items.add({
+            'group_id': value.id,
+            'color_code': item.itemColor,
+            "item_name": item.itemName,
+            "item_count": item.itemCount
+          });
+        });
+      }).onError((error, stackTrace){
+        ToastLoader.remove();
+        DisplayUtils.showToast(context, error.toString());
+      });
+    });
+  }
+
+  Map<String, List<Map<String, dynamic>>> groupItemsByValue(
+      List<Map<String, dynamic>> items, String key) {
+    Map<String, List<Map<String, dynamic>>> groupedData = {};
+
+    for (var item in items) {
+      String value = item[key].toString();
+
+      if (groupedData.containsKey(value)) {
+        groupedData[value]!.add(item);
+      } else {
+        groupedData[value] = [item];
+      }
+    }
+
+    return groupedData;
+  }
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -115,13 +199,46 @@ class _SettingsPageState extends State<SettingsPage> {
                 height: 20,
               ),
               SettingsTile(
-                title: 'Import Form CSV',
+                title: 'Export As CSV',
                 onTap: () {
                   showDialog(
                       context: context,
                       builder: (BuildContext context) {
                         return ImportFromCvsDialog();
                       });
+                },
+              ),
+              SettingsTile(
+                title: 'Import Form CSV',
+                onTap: () async {
+                  FilePickerResult? result = await FilePicker.platform.pickFiles();
+                  if (result != null) {
+                    String? path = result.files.first.path;
+                    if(path != null) {
+                      if(path.contains('.cvs')){
+                        File file = File(result.files.single.path!);
+                        DisplayUtils.flutterShowToast('Uploading data...');
+                        ToastLoader.show();
+                        _loadCsvData(file.path).then((value) async {
+                          List<GroupItem> groupItems = convertToGroupItems(value);
+                          List<Map<String, dynamic>> items = convertToMap1(groupItems);
+                          List<GroupDataModel> list = convertToObjects(groupItemsByValue(items, 'name'));
+                          await uploadDataToFireStore(list);
+                          ToastLoader.remove();
+                          DisplayUtils.flutterShowToast('Data uploaded successfully');
+                        }).onError((error, stackTrace) {
+                          ToastLoader.remove();
+                          DisplayUtils.flutterShowToast(error.toString());
+                        });
+                      }else{
+                        DisplayUtils.showErrorToast(context, 'Invalid CSV file');
+                      }
+                    }else{
+                      DisplayUtils.showErrorToast(context, 'Invalid CSV file');
+                    }
+                  } else {
+                    // User canceled the picker
+                  }
                 },
               ),
               SettingsTile(
@@ -231,4 +348,5 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
+
 }

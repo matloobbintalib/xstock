@@ -15,8 +15,11 @@ import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/constants/asset_paths.dart';
 import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/authentication/cubits/login/login_cubit.dart';
+import 'package:xstock/modules/authentication/cubits/login/login_state.dart';
 import 'package:xstock/modules/authentication/cubits/signup/signup_cubit.dart';
 import 'package:xstock/modules/authentication/cubits/signup/signup_state.dart';
+import 'package:xstock/modules/authentication/dialogs/branch_name_dialog.dart';
 import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/authentication/pages/login_page.dart';
 import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
@@ -38,8 +41,15 @@ class SignUpPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => SignupCubit(sl()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => SignupCubit(sl()),
+        ),
+        BlocProvider(
+          create: (context) => LoginCubit(sl(), sl()),
+        ),
+      ],
       child: SignUpPageView(),
     );
   }
@@ -72,140 +82,172 @@ class _SignUpPageViewState extends State<SignUpPageView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: BlocConsumer<SignupCubit, SignupState>(
+      body: BlocConsumer<LoginCubit, LoginState>(
         listener: (context, state) async {
-          if (state.signupStatus == SignupStatus.loading) {
+          if (state.loginStatus == LoginStatus.loading) {
             ToastLoader.show();
-          } else if (state.signupStatus == SignupStatus.success) {
-            await userAccountRepository.saveUserInDb(state.userModel);
+          } else if (state.loginStatus == LoginStatus.success) {
             ToastLoader.remove();
             DisplayUtils.showToast(context, state.message);
             NavRouter.pushAndRemoveUntilWithAnimation(context, HomePage(),
                 type: PageTransitionType.size, hasAlignment: true);
-          } else if (state.signupStatus == SignupStatus.error) {
+          } else if (state.loginStatus == LoginStatus.userNotFound) {
+            showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return BranchNameDialog();
+                }).then((value) {
+              if (value.isNotEmpty) {
+                context.read<LoginCubit>().socialSignUp(
+                    value, generateRandomString(6), state.googleUser!);
+              } else {
+                DisplayUtils.showErrorToast(
+                    context, 'Branch name is required!');
+              }
+            });
+          } else if (state.loginStatus == LoginStatus.error) {
             ToastLoader.remove();
             DisplayUtils.showErrorToast(context, state.message);
           }
         },
         builder: (context, state) {
-          return SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 36, vertical: 40),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    height: 10,
-                  ),
-                  AppbarWidget(
-                    title: 'Sign Up',
-                  ),
-                  SizedBox(
-                    height: 40,
-                  ),
-                  InputFieldWithTitle(
-                    floatingHint: 'Branch Name',
-                    hint: 'i-e jone deper',
-                    maxLines: 1,
-                    keyboardType: TextInputType.name,
-                    controller: branchNameController,
-                  ),
-                  SizedBox(
-                    height: 24,
-                  ),
-                  InputFieldWithTitle(
-                    floatingHint: 'Email',
-                    hint: 'abc@gmail.com',
-                    maxLines: 1,
-                    keyboardType: TextInputType.emailAddress,
-                    controller: emailController,
-                  ),
-                  SizedBox(
-                    height: 24,
-                  ),
-                  InputFieldWithTitle(
-                    floatingHint: 'Password',
-                    hint: '************',
-                    controller: passwordController,
-                    keyboardType: TextInputType.visiblePassword,
-                    maxLines: 1,
-                    suffixIcon: PasswordSuffixIcon(
-                      isPasswordVisible: !state.isPasswordHidden,
-                      onTap: () {
-                        context.read<SignupCubit>().toggleShowPassword();
-                      },
-                    ),
-                    obscureText: state.isPasswordHidden,
-                  ),
-                  SizedBox(
-                    height: 50,
-                  ),
-                  PrimaryButton(
-                    onPressed: _signUp,
-                    title: 'Register',
-                    titleColor: Colors.black,
-                    width: 200,
-                    height: 56,
-                    borderRadius: 28,
-                  ),
-                  SizedBox(
-                    height: 40,
-                  ),
-                  PrefixIconButton(
-                    onPressed: () {
-
-                    },
-                    title: 'Sign in with Google',
-                    prefixIconPath: 'assets/images/svg/ic_google.svg',
-                    prefixIconSize: 30,
-                    borderRadius: 20,
-                    height: 64,
-                    fontSize: 14,
-                    titleColor: Colors.white,
-                    backgroundColor: AppColors.fieldColor,
-                    borderColor: AppColors.fieldColor,
-                  ),
-                  SizedBox(
-                    height: 16,
-                  ),
-                  PrefixIconButton(
-                    onPressed: () {},
-                    title: 'Sign in with Apple',
-                    prefixIconPath: 'assets/images/svg/ic_apple.svg',
-                    borderRadius: 20,
-                    height: 64,
-                    fontSize: 14,
-                    prefixIconSize: 30,
-                    titleColor: Colors.white,
-                    backgroundColor: AppColors.fieldColor,
-                    borderColor: AppColors.fieldColor,
-                  ),
-                  SizedBox(
-                    height: 70,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          return BlocConsumer<SignupCubit, SignupState>(
+            listener: (context, state) async {
+              if (state.signupStatus == SignupStatus.loading) {
+                ToastLoader.show();
+              } else if (state.signupStatus == SignupStatus.success) {
+                await userAccountRepository.saveUserInDb(state.userModel);
+                ToastLoader.remove();
+                DisplayUtils.showToast(context, state.message);
+                NavRouter.pushAndRemoveUntilWithAnimation(context, HomePage(),
+                    type: PageTransitionType.size, hasAlignment: true);
+              } else if (state.signupStatus == SignupStatus.error) {
+                ToastLoader.remove();
+                DisplayUtils.showErrorToast(context, state.message);
+              }
+            },
+            builder: (context, state) {
+              return SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 36, vertical: 40),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Text(
-                        'Already have an account?',
-                        style: context.textTheme.bodyMedium,
+                      SizedBox(
+                        height: 10,
                       ),
-                      IconButton(
-                        onPressed: () {
-                          NavRouter.pushReplacement(context, LoginPage());
-                        },
-                        icon: Text(
-                          'Sign In',
-                          style: context.textTheme.bodyMedium
-                              ?.copyWith(color: context.colorScheme.primary),
+                      AppbarWidget(
+                        title: 'Sign Up',
+                      ),
+                      SizedBox(
+                        height: 40,
+                      ),
+                      InputFieldWithTitle(
+                        floatingHint: 'Branch Name',
+                        hint: 'i-e jone deper',
+                        maxLines: 1,
+                        keyboardType: TextInputType.name,
+                        controller: branchNameController,
+                      ),
+                      SizedBox(
+                        height: 24,
+                      ),
+                      InputFieldWithTitle(
+                        floatingHint: 'Email',
+                        hint: 'abc@gmail.com',
+                        maxLines: 1,
+                        keyboardType: TextInputType.emailAddress,
+                        controller: emailController,
+                      ),
+                      SizedBox(
+                        height: 24,
+                      ),
+                      InputFieldWithTitle(
+                        floatingHint: 'Password',
+                        hint: '************',
+                        controller: passwordController,
+                        keyboardType: TextInputType.visiblePassword,
+                        maxLines: 1,
+                        suffixIcon: PasswordSuffixIcon(
+                          isPasswordVisible: !state.isPasswordHidden,
+                          onTap: () {
+                            context.read<SignupCubit>().toggleShowPassword();
+                          },
                         ),
+                        obscureText: state.isPasswordHidden,
+                      ),
+                      SizedBox(
+                        height: 50,
+                      ),
+                      PrimaryButton(
+                        onPressed: _signUp,
+                        title: 'Register',
+                        titleColor: Colors.black,
+                        width: 200,
+                        height: 56,
+                        borderRadius: 28,
+                      ),
+                      SizedBox(
+                        height: 40,
+                      ),
+                      PrefixIconButton(
+                        onPressed: () {
+                          context.read<LoginCubit>().socialSignIn();
+                        },
+                        title: 'Sign in with Google',
+                        prefixIconPath: 'assets/images/svg/ic_google.svg',
+                        prefixIconSize: 30,
+                        borderRadius: 20,
+                        height: 64,
+                        fontSize: 14,
+                        titleColor: Colors.white,
+                        backgroundColor: AppColors.fieldColor,
+                        borderColor: AppColors.fieldColor,
+                      ),
+                      SizedBox(
+                        height: 16,
+                      ),
+                      PrefixIconButton(
+                        onPressed: () {},
+                        title: 'Sign in with Apple',
+                        prefixIconPath: 'assets/images/svg/ic_apple.svg',
+                        borderRadius: 20,
+                        height: 64,
+                        fontSize: 14,
+                        prefixIconSize: 30,
+                        titleColor: Colors.white,
+                        backgroundColor: AppColors.fieldColor,
+                        borderColor: AppColors.fieldColor,
+                      ),
+                      SizedBox(
+                        height: 70,
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Already have an account?',
+                            style: context.textTheme.bodyMedium,
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              NavRouter.pushReplacement(context, LoginPage());
+                            },
+                            icon: Text(
+                              'Sign In',
+                              style: context.textTheme.bodyMedium
+                                  ?.copyWith(
+                                  color: context.colorScheme.primary),
+                            ),
+                          )
+                        ],
                       )
                     ],
-                  )
-                ],
-              ),
-            ),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -222,41 +264,9 @@ class _SignUpPageViewState extends State<SignUpPageView> {
           context.read<SignupCubit>().signup(
               branchNameController.text.trim().toString(),
               emailController.text.trim().toString(),
-              passwordController.text.trim().toString(),generateRandomString(6));
+              passwordController.text.trim().toString(),
+              generateRandomString(6));
         }
-      }
-    }
-  }
-
-  void signInWithGoogle() async {
-    try {
-      ToastLoader.show();
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      print(googleUser);
-      if (googleUser != null) {
-        await GoogleSignIn().signOut();
-        final userData = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
-            accessToken: userData.accessToken, idToken: userData.idToken);
-        await FirebaseAuth.instance
-            .signInWithCredential(credential)
-            .then((value) async {
-          await sessionRepository.setLoggedIn(true);
-          ToastLoader.remove();
-          DisplayUtils.showToast(context, "Login successfully!");
-          NavRouter.pushAndRemoveUntilWithAnimation(context, HomePage(),
-              type: PageTransitionType.size, hasAlignment: true);
-        });
-      } else {
-        ToastLoader.remove();
-      }
-    } catch (e) {
-      ToastLoader.remove();
-      if (e is PlatformException) {
-        DisplayUtils.showErrorToast(
-            context, 'PlatformException : ${e.message}');
-      } else {
-        DisplayUtils.showErrorToast(context, 'Exception : $e');
       }
     }
   }

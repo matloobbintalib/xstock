@@ -14,6 +14,17 @@ class DisplayUtils {
       );
   }
 
+  static void flutterShowToast( String title) {
+    Fluttertoast.showToast(
+        msg: title,
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        /*backgroundColor: Colors.red,
+        textColor: Colors.white,*/
+        fontSize: 16.0
+    );
+  }
   static void showToast(BuildContext context, String title) {
     final snackBar = SnackBar(
       elevation: 2,

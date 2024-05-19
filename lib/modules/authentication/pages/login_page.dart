@@ -1,24 +1,20 @@
-import 'dart:io';
+import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
-import 'package:xstock/constants/asset_paths.dart';
 import 'package:xstock/core/di/service_locator.dart';
 import 'package:xstock/modules/authentication/cubits/login/login_cubit.dart';
 import 'package:xstock/modules/authentication/cubits/login/login_state.dart';
+import 'package:xstock/modules/authentication/dialogs/branch_name_dialog.dart';
 import 'package:xstock/modules/authentication/pages/forgot_password_page.dart';
 import 'package:xstock/modules/authentication/pages/signup_page.dart';
 import 'package:xstock/modules/authentication/widgets/password_suffix_widget.dart';
 import 'package:xstock/modules/common/repo/session_repository.dart';
 import 'package:xstock/modules/home/pages/home_page.dart';
-import 'package:xstock/modules/subscription/pages/subscription_page.dart';
 import 'package:xstock/ui/widgets/input_filed_with_title.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/ui/widgets/toast_loader.dart';
@@ -26,15 +22,13 @@ import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 import 'package:xstock/utils/validators/validators.dart';
 
-import '../../../utils/validators/email_validator.dart';
-
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => LoginCubit(sl(),sl()),
+      create: (context) => LoginCubit(sl(), sl()),
       child: LoginPageView(),
     );
   }
@@ -66,6 +60,18 @@ class _LoginPageViewState extends State<LoginPageView> {
             DisplayUtils.showToast(context, state.message);
             NavRouter.pushAndRemoveUntilWithAnimation(context, HomePage(),
                 type: PageTransitionType.size, hasAlignment: true);
+          } else if (state.loginStatus == LoginStatus.userNotFound) {
+            showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return BranchNameDialog();
+                }).then((value) {
+              if(value.isNotEmpty){
+                context.read<LoginCubit>().socialSignUp(value,generateRandomString(6), state.googleUser!);
+              }else{
+                DisplayUtils.showErrorToast(context, 'Branch name is required!');
+              }
+            });
           } else if (state.loginStatus == LoginStatus.error) {
             ToastLoader.remove();
             DisplayUtils.showErrorToast(context, state.message);
@@ -140,7 +146,7 @@ class _LoginPageViewState extends State<LoginPageView> {
                   ),
                   PrefixIconButton(
                     onPressed: () async {
-
+                      context.read<LoginCubit>().socialSignIn();
                     },
                     title: 'Sign in with Google',
                     prefixIconPath: 'assets/images/svg/ic_google.svg',
@@ -156,7 +162,9 @@ class _LoginPageViewState extends State<LoginPageView> {
                     height: 16,
                   ),
                   PrefixIconButton(
-                    onPressed: () {},
+                    onPressed: () {
+
+                    },
                     title: 'Sign in with Apple',
                     prefixIconPath: 'assets/images/svg/ic_apple.svg',
                     borderRadius: 20,
@@ -211,44 +219,21 @@ class _LoginPageViewState extends State<LoginPageView> {
   }
 
   void _signIn() async {
-    if(Validators.isValidEmail(context, emailController.text.trim().toString())){
-      if(Validators.isValidPassword(context, passwordController.text.trim().toString())){
-        context.read<LoginCubit>().login(
-            emailController.text.trim().toString(),
+    if (Validators.isValidEmail(
+        context, emailController.text.trim().toString())) {
+      if (Validators.isValidPassword(
+          context, passwordController.text.trim().toString())) {
+        context.read<LoginCubit>().login(emailController.text.trim().toString(),
             passwordController.text.trim().toString());
       }
     }
   }
 
-  void signInWithGoogle() async {
-    try {
-      ToastLoader.show();
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      print(googleUser);
-      if (googleUser != null) {
-        await GoogleSignIn().signOut();
-        final userData = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
-            accessToken: userData.accessToken, idToken: userData.idToken);
-        await FirebaseAuth.instance
-            .signInWithCredential(credential)
-            .then((value) async {
-          await sessionRepository.setLoggedIn(true);
-          ToastLoader.remove();
-          DisplayUtils.showToast(context, "Login successfully!");
-          NavRouter.pushAndRemoveUntilWithAnimation(context, HomePage(),
-              type: PageTransitionType.size, hasAlignment: true);
-        });
-      } else {
-        ToastLoader.remove();
-      }
-    } catch (e) {
-      ToastLoader.remove();
-      if (e is PlatformException) {
-        DisplayUtils.showErrorToast(context,'PlatformException : ${e.message}');
-      } else {
-        DisplayUtils.showErrorToast(context,'Exception : $e');
-      }
-    }
+  String generateRandomString(int len) {
+    var r = Random();
+    const _chars =
+        'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+    return List.generate(len, (index) => _chars[r.nextInt(_chars.length)])
+        .join();
   }
 }

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/modules/common/image_picker/image_picker_cubit.dart';
+import 'package:xstock/ui/dialogs/dialog_utils.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 
 class UploadPictureDialog extends StatelessWidget {
@@ -31,7 +35,12 @@ class UploadPictureDialog extends StatelessWidget {
               children: [
                 Expanded(
                     child: OnClick(
-                        onTap: () {},
+                        onTap: ()async  {
+                          context
+                              .read<ImagePickerCubit>()
+                              .pickImage(ImageSource.camera);
+                          NavRouter.pop(context);
+                        },
                         child: SvgPicture.asset(
                             "assets/images/svg/ic_camera.svg"))),
                 SizedBox(
@@ -39,7 +48,12 @@ class UploadPictureDialog extends StatelessWidget {
                 ),
                 Expanded(
                     child: OnClick(
-                        onTap: () {},
+                        onTap: () {
+                          context
+                              .read<ImagePickerCubit>()
+                              .pickImage(ImageSource.gallery);
+                          NavRouter.pop(context);
+                        },
                         child: SvgPicture.asset(
                             "assets/images/svg/ic_gallery.svg")))
               ],
