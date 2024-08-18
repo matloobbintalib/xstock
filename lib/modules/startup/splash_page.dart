@@ -8,6 +8,8 @@ import 'package:xstock/config/routes/nav_router.dart';
 import 'package:xstock/modules/authentication/pages/login_page.dart';
 import 'package:xstock/modules/home/pages/home_page.dart';
 import 'package:xstock/modules/startup/welcome_page.dart';
+import 'package:xstock/modules/user/cubits/user_cubit.dart';
+import 'package:xstock/utils/extensions/context_user.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
 import '../../constants/asset_paths.dart';
@@ -31,11 +33,12 @@ class _SplashPageState extends State<SplashPage> {
       child: BlocListener<StartupCubit, StartupState>(
         listener: (context, state) {
           if (state.status == Status.authenticated) {
-            NavRouter.pushAndRemoveUntilWithAnimation(context, HomePage(),
-                type: PageTransitionType.size, hasAlignment: true);
+            context.read<UserCubit>().loadUser();
+            context.read<UserCubit>().loadUser();
+            var user = context.read<UserCubit>().state.userModel;
+            NavRouter.pushAndRemoveUntil(context, HomePage(userModel: user,));
           } else if (state.status == Status.unauthenticated) {
-            NavRouter.pushAndRemoveUntilWithAnimation(context, WelcomePage(),
-                type: PageTransitionType.size, hasAlignment: true);
+            NavRouter.pushAndRemoveUntil(context, WelcomePage());
           }
         },
         child: Scaffold(

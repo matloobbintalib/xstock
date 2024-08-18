@@ -1,10 +1,11 @@
+import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/home/models/group_model.dart';
 import 'package:xstock/modules/settings/models/account_title_model.dart';
 
 enum AccountsStatus { initial }
 
 class AccountsState {
-  final List<AccountTitleModel> accounts;
+  final List<UserModel> accounts;
 
   AccountsState({required this.accounts});
 
@@ -12,7 +13,7 @@ class AccountsState {
     return AccountsState(accounts: []);
   }
 
-  AccountsState copyWith({List<AccountTitleModel>? accounts}) {
+  AccountsState copyWith({List<UserModel>? accounts}) {
     return AccountsState(accounts: accounts ?? this.accounts);
   }
 }

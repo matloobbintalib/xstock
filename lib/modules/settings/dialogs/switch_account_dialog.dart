@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:xstock/config/routes/nav_router.dart';
+import 'package:xstock/constants/api_endpoints.dart';
 import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/core/di/service_locator.dart';
 import 'package:xstock/modules/authentication/models/user_model.dart';
@@ -14,6 +17,7 @@ import 'package:xstock/modules/settings/cubit/accounts_cubit.dart';
 import 'package:xstock/modules/settings/cubit/accounts_state.dart';
 import 'package:xstock/modules/settings/models/account_title_model.dart';
 import 'package:xstock/modules/settings/widgets/account_tile.dart';
+import 'package:xstock/modules/user/cubits/user_cubit.dart';
 import 'package:xstock/ui/widgets/loading_indicator.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
@@ -22,19 +26,29 @@ import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/utils.dart';
 
 class SwitchAccountDialog extends StatefulWidget {
-  const SwitchAccountDialog({super.key});
+  final String deviceId;
+
+  const SwitchAccountDialog({super.key, required this.deviceId});
 
   @override
   State<SwitchAccountDialog> createState() => _SwitchAccountDialogState();
 }
 
 class _SwitchAccountDialogState extends State<SwitchAccountDialog> {
-  final Stream<QuerySnapshot> usersStream =
-      FirebaseFirestore.instance.collection('users').snapshots();
-  List<AccountTitleModel> accounts = [];
-  StreamConsumer<List<AccountTitleModel>> streamConsumer =
-      StreamController.broadcast();
+  late Stream<QuerySnapshot> usersStream;
+
+  List<UserModel> accounts = [];
+  StreamConsumer<List<UserModel>> streamConsumer = StreamController.broadcast();
   UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
+
+  @override
+  void initState() {
+    super.initState();
+    usersStream = FirebaseFirestore.instance
+        .collection(Endpoints.usersTable)
+        .where(Endpoints.deviceId, isEqualTo: widget.deviceId)
+        .snapshots();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,22 +76,18 @@ class _SwitchAccountDialogState extends State<SwitchAccountDialog> {
                 accounts.clear();
                 snapshot.data!.docs.map((DocumentSnapshot document) {
                   Map a = document.data() as Map<String, dynamic>;
-                  if (a['user_id'] ==
-                      userAccountRepository.getUserFromDb().user_id) {
-                    accounts.add(AccountTitleModel(
-                        id: a['user_id'],
-                        name: a['branch_name'],
-                        email: a['email'],
-                        isSelected:
-                            userAccountRepository.getUserFromDb().email ==
-                                    a['email']
-                                ? true
-                                : false));
-                  }
+                  accounts.add(UserModel(
+                      id: a['id'],
+                      branchName: a['branch_name'],
+                      email: a['email'],
+                      alertEmail: a['alert_email'],
+                      deviceId: a['device_id'],
+                      isSelected: userAccountRepository.getUserFromDb().email ==
+                              a['email']
+                          ? true
+                          : false));
                 }).toList();
-                context
-                    .read<AccountsCubit>()
-                    .initialList(accounts);
+                context.read<AccountsCubit>().initialList(accounts);
                 return Container(
                   padding: EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                   child: Column(
@@ -106,13 +116,14 @@ class _SwitchAccountDialogState extends State<SwitchAccountDialog> {
                                     context
                                         .read<AccountsCubit>()
                                         .updateAccountSelection(
-                                        state.accounts[index].email);
+                                            state.accounts[index].email);
                                   },
                                   child: AccountTile(
                                     model: state.accounts[index],
-                                    backgroundColor: state.accounts[index].isSelected
-                                        ? Color(0xff00D8FA)
-                                        : Colors.black,
+                                    backgroundColor:
+                                        state.accounts[index].isSelected
+                                            ? Color(0xff00D8FA)
+                                            : Colors.black,
                                     titleColor: state.accounts[index].isSelected
                                         ? Colors.black
                                         : Colors.white,
@@ -139,17 +150,26 @@ class _SwitchAccountDialogState extends State<SwitchAccountDialog> {
                           ),
                           Expanded(
                             child: PrimaryButton(
-                              onPressed: ()async {
-                                var user = context.read<AccountsCubit>().state.accounts
-                                    .firstWhere((element) => element.isSelected);
+                              onPressed: () async {
+                                var user = context
+                                    .read<AccountsCubit>()
+                                    .state
+                                    .accounts
+                                    .firstWhere(
+                                        (element) => element.isSelected);
                                 var userModel = UserModel(
-                                    branch_name: user.name,
+                                    id: user.id,
+                                    branchName: user.branchName,
                                     email: user.email,
-                                    user_id: user.id);
+                                    alertEmail: user.alertEmail,
+                                    deviceId: user.deviceId);
                                 ToastLoader.show();
-                                await userAccountRepository.saveUserInDb(userModel).then((value){
+                                await userAccountRepository
+                                    .saveUserInDb(userModel)
+                                    .then((value) {
                                   ToastLoader.remove();
-                                  DisplayUtils.showToast(context, 'User switched successfully');
+                                  DisplayUtils.showToast(
+                                      context, 'User switched successfully');
                                   NavRouter.pop(context);
                                 });
                               },
@@ -167,5 +187,22 @@ class _SwitchAccountDialogState extends State<SwitchAccountDialog> {
                 );
               })),
     );
+  }
+
+  Future<String> getDeviceUUID() async {
+    var deviceInfo = DeviceInfoPlugin();
+    if (Platform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      return androidInfo.id; // UUID for Android
+    } else if (Platform.isIOS) {
+      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+      if (iosInfo.identifierForVendor != null) {
+        return iosInfo.identifierForVendor.toString(); // UUID for iOS
+      } else {
+        return '';
+      }
+    } else {
+      return '';
+    }
   }
 }

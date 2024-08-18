@@ -9,7 +9,9 @@ import 'package:xstock/ui/dialogs/dialog_utils.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 
 class UploadPictureDialog extends StatelessWidget {
-  const UploadPictureDialog({super.key});
+  final VoidCallback onGallerySelect;
+  final VoidCallback onCameraSelect;
+  const UploadPictureDialog({super.key, required this.onGallerySelect, required this.onCameraSelect});
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +38,8 @@ class UploadPictureDialog extends StatelessWidget {
                 Expanded(
                     child: OnClick(
                         onTap: ()async  {
-                          context
-                              .read<ImagePickerCubit>()
-                              .pickImage(ImageSource.camera);
-                          NavRouter.pop(context);
+                          onCameraSelect();
+                          NavRouter.pop(context, true);
                         },
                         child: SvgPicture.asset(
                             "assets/images/svg/ic_camera.svg"))),
@@ -49,10 +49,8 @@ class UploadPictureDialog extends StatelessWidget {
                 Expanded(
                     child: OnClick(
                         onTap: () {
-                          context
-                              .read<ImagePickerCubit>()
-                              .pickImage(ImageSource.gallery);
-                          NavRouter.pop(context);
+                          onGallerySelect();
+                          NavRouter.pop(context, true);
                         },
                         child: SvgPicture.asset(
                             "assets/images/svg/ic_gallery.svg")))

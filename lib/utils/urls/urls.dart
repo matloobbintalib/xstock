@@ -6,7 +6,7 @@ class Urls {
   Urls._();
 
   static const _termsOfService = 'https://google.com/';
-  static const _privacyPolicy = 'https://google.com/';
+  static const _privacyPolicy = 'https://www.freeprivacypolicy.com/live/2f9d374c-7b69-4ba9-8e04-fc80c540cd8e';
 
   static void showTermsOfService() => _show(_termsOfService);
 

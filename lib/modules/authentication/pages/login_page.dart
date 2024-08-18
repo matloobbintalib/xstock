@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'dart:math';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
@@ -15,10 +18,12 @@ import 'package:xstock/modules/authentication/pages/signup_page.dart';
 import 'package:xstock/modules/authentication/widgets/password_suffix_widget.dart';
 import 'package:xstock/modules/common/repo/session_repository.dart';
 import 'package:xstock/modules/home/pages/home_page.dart';
+import 'package:xstock/modules/user/cubits/user_cubit.dart';
 import 'package:xstock/ui/widgets/input_filed_with_title.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/ui/widgets/toast_loader.dart';
 import 'package:xstock/utils/display/display_utils.dart';
+import 'package:xstock/utils/extensions/context_user.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 import 'package:xstock/utils/validators/validators.dart';
 
@@ -58,18 +63,32 @@ class _LoginPageViewState extends State<LoginPageView> {
           } else if (state.loginStatus == LoginStatus.success) {
             ToastLoader.remove();
             DisplayUtils.showToast(context, state.message);
-            NavRouter.pushAndRemoveUntilWithAnimation(context, HomePage(),
-                type: PageTransitionType.size, hasAlignment: true);
+            context.read<UserCubit>().loadUser();
+            var user = context.read<UserCubit>().state.userModel;
+            NavRouter.pushAndRemoveUntil(
+                context,
+                HomePage(
+                  userModel: user,
+                ),);
           } else if (state.loginStatus == LoginStatus.userNotFound) {
             showDialog(
                 context: context,
                 builder: (BuildContext context) {
                   return BranchNameDialog();
-                }).then((value) {
-              if(value.isNotEmpty){
-                context.read<LoginCubit>().socialSignUp(value,generateRandomString(6), state.googleUser!);
-              }else{
-                DisplayUtils.showErrorToast(context, 'Branch name is required!');
+                }).then((value) async {
+              if (value != null) {
+                if (value.isNotEmpty) {
+                  String deviceId = await getDeviceUUID();
+                  context
+                      .read<LoginCubit>()
+                      .socialSignUp(value, deviceId, state.userModel);
+                } else {
+                  DisplayUtils.showErrorToast(
+                      context, 'Branch name is required!');
+                }
+              } else {
+                DisplayUtils.showErrorToast(
+                    context, 'Branch name is required!');
               }
             });
           } else if (state.loginStatus == LoginStatus.error) {
@@ -158,7 +177,7 @@ class _LoginPageViewState extends State<LoginPageView> {
                     backgroundColor: AppColors.fieldColor,
                     borderColor: AppColors.fieldColor,
                   ),
-                  SizedBox(
+                  /*SizedBox(
                     height: 16,
                   ),
                   PrefixIconButton(
@@ -174,7 +193,7 @@ class _LoginPageViewState extends State<LoginPageView> {
                     titleColor: Colors.white,
                     backgroundColor: AppColors.fieldColor,
                     borderColor: AppColors.fieldColor,
-                  ),
+                  ),*/
                   SizedBox(
                     height: 60,
                   ),
@@ -219,21 +238,31 @@ class _LoginPageViewState extends State<LoginPageView> {
   }
 
   void _signIn() async {
+    String deviceId = await getDeviceUUID();
     if (Validators.isValidEmail(
         context, emailController.text.trim().toString())) {
       if (Validators.isValidPassword(
           context, passwordController.text.trim().toString())) {
         context.read<LoginCubit>().login(emailController.text.trim().toString(),
-            passwordController.text.trim().toString());
+            passwordController.text.trim().toString(), deviceId);
       }
     }
   }
 
-  String generateRandomString(int len) {
-    var r = Random();
-    const _chars =
-        'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
-    return List.generate(len, (index) => _chars[r.nextInt(_chars.length)])
-        .join();
+  Future<String> getDeviceUUID() async {
+    var deviceInfo = DeviceInfoPlugin();
+    if (Platform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      return androidInfo.id; // UUID for Android
+    } else if (Platform.isIOS) {
+      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+      if (iosInfo.identifierForVendor != null) {
+        return iosInfo.identifierForVendor.toString(); // UUID for iOS
+      } else {
+        return '';
+      }
+    } else {
+      return '';
+    }
   }
 }

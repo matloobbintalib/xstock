@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/core/di/service_locator.dart';
 import 'package:xstock/modules/authentication/cubits/signup/signup_cubit.dart';
 import 'package:xstock/modules/authentication/cubits/signup/signup_state.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
 import 'package:xstock/modules/authentication/widgets/password_suffix_widget.dart';
 import 'package:xstock/modules/home/pages/home_page.dart';
@@ -51,7 +54,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
               ToastLoader.show();
             } else if (state.signupStatus == SignupStatus.success) {
               ToastLoader.remove();
-              DisplayUtils.showToast(context, state.message);
+              DisplayUtils.showToast(context, 'New Account added successfully');
               NavRouter.pop(context);
             } else if (state.signupStatus == SignupStatus.error) {
               ToastLoader.remove();
@@ -117,29 +120,22 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
                       height: 50,
                     ),
                     PrimaryButton(
-                      onPressed: () async {
+                      onPressed:()async {
+                        String deviceId = await getDeviceUUID();
                         if (Validators.isNotEmpty(
-                            context,
-                            "Branch Name",
-                            branchNameController.text
-                                .trim()
-                                .toString())) {
-                          if (Validators.isValidEmail(context,
-                              emailController.text.trim().toString())) {
+                            context, "Branch Name", branchNameController.text.trim().toString())) {
+                          if (Validators.isValidEmail(
+                              context, emailController.text.trim().toString())) {
                             if (Validators.isValidPassword(
-                                context,
-                                passwordController.text
-                                    .trim()
-                                    .toString())) {
-                              context.read<SignupCubit>().signup(
-                                  branchNameController.text
-                                      .trim()
-                                      .toString(),
-                                  emailController.text.trim().toString(),
-                                  passwordController.text
-                                      .trim()
-                                      .toString(),
-                                  userAccountRepository.getUserFromDb().user_id);
+                                context, passwordController.text.trim().toString())) {
+                              UserModel userModel = UserModel(
+                                  branchName: branchNameController.text.trim().toString(),
+                                  email: emailController.text.trim().toString(),
+                                  alertEmail: emailController.text.trim().toString(),
+                                  deviceId: deviceId);
+                              context
+                                  .read<SignupCubit>()
+                                  .signup(userModel, passwordController.text.trim().toString());
                             }
                           }
                         }
@@ -159,12 +155,20 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
       ),
     );
   }
-
-  String generateRandomString(int len) {
-    var r = Random();
-    const _chars =
-        'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
-    return List.generate(len, (index) => _chars[r.nextInt(_chars.length)])
-        .join();
+  Future<String> getDeviceUUID() async {
+    var deviceInfo = DeviceInfoPlugin();
+    if (Platform.isAndroid) {
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      return androidInfo.id;  // UUID for Android
+    } else if (Platform.isIOS) {
+      IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
+      if(iosInfo.identifierForVendor != null){
+        return iosInfo.identifierForVendor.toString(); // UUID for iOS
+      }else{
+        return '';
+      }
+    }else{
+      return '';
+    }
   }
 }

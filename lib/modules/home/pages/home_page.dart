@@ -1,47 +1,75 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:xstock/config/config.dart';
+import 'package:xstock/constants/api_endpoints.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/constants/constants.dart';
 import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
+import 'package:xstock/modules/home/cubits/group_cubit/groups_cubit.dart';
+import 'package:xstock/modules/home/cubits/group_cubit/groups_state.dart';
+import 'package:xstock/modules/home/cubits/group_streams/group_streams_cubit.dart';
+import 'package:xstock/modules/home/cubits/group_streams/group_streams_state.dart';
+import 'package:xstock/modules/home/cubits/items_streams/items_streams_cubit.dart';
+import 'package:xstock/modules/home/cubits/send_notification/send_notification_cubit.dart';
 import 'package:xstock/modules/home/dialogs/item_detail_dialog.dart';
 import 'package:xstock/modules/home/dialogs/new_group_dialog.dart';
 import 'package:xstock/modules/home/models/group_model.dart';
+import 'package:xstock/modules/home/pages/add_item_page.dart';
 import 'package:xstock/modules/home/widgets/group_widget.dart';
 import 'package:xstock/modules/settings/pages/settings_page.dart';
+import 'package:xstock/modules/user/cubits/user_cubit.dart';
 import 'package:xstock/ui/input/input_field.dart';
 import 'package:xstock/ui/widgets/loading_indicator.dart';
+import 'package:xstock/ui/widgets/no_data_found.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/utils/display/display_utils.dart';
+import 'package:xstock/utils/extensions/context_user.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class HomePage extends StatelessWidget {
+  final UserModel userModel;
+  const HomePage({super.key, required this.userModel});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  Widget build(BuildContext context) {
+    return MultiBlocProvider(
+  providers: [
+    BlocProvider(
+      create: (context) => GroupsCubit(),
+)
+  ],
+  child: HomePageView(userModel: userModel,),
+);
+  }
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageView extends StatefulWidget {
+  final UserModel userModel;
+  const HomePageView({super.key, required this.userModel});
+
+  @override
+  State<HomePageView> createState() => _HomePageViewState();
+}
+
+class _HomePageViewState extends State<HomePageView> {
   TextEditingController searchController = TextEditingController();
-
   UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
+  CollectionReference usersCollection = FirebaseFirestore.instance.collection(Endpoints.usersTable);
   late Stream<QuerySnapshot> groupsStream;
-
   List<GroupModel> groups = [];
 
   @override
   void initState() {
     super.initState();
-    groupsStream = FirebaseFirestore.instance
-        .collection('groups')
-        .where('user_id',
-            isEqualTo: userAccountRepository.getUserFromDb().user_id)
-        .snapshots();
+    context.read<NotificationCubit>()..sendNotification();
   }
 
   @override
   Widget build(BuildContext context) {
+    var user = context.watchCurrentUser;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Padding(
@@ -63,16 +91,23 @@ class _HomePageState extends State<HomePage> {
                           context: (context),
                           builder: (context) {
                             return NewGroupDialog();
-                          });
+                          }).then((value) {
+                        context.read<UserCubit>().loadUser();
+                        setState(() {});
+                      });
                     },
                     icon:
-                        SvgPicture.asset("assets/images/svg/ic_add_group.svg")),
+                    SvgPicture.asset("assets/images/svg/ic_add_group.svg")),
                 IconButton(
                     onPressed: () {
-                      NavRouter.pushWithAnimation(context, SettingsPage());
+                      NavRouter.pushWithAnimation(context, SettingsPage())
+                          .then((value) {
+                        context.read<UserCubit>().loadUser();
+                        setState(() {});
+                      });
                     },
                     icon:
-                        SvgPicture.asset("assets/images/svg/ic_settings.svg")),
+                    SvgPicture.asset("assets/images/svg/ic_settings.svg")),
               ],
             ),
             SizedBox(
@@ -95,10 +130,14 @@ class _HomePageState extends State<HomePage> {
                   "assets/images/svg/ic_search.svg",
                 ),
               ),
+              onChange: (String value) {
+                print(value);
+                context.read<GroupsCubit>().filterSearchResults(value);
+              },
             ),
             Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                    stream: groupsStream,
+                    stream: usersCollection.doc(user.id).collection(Endpoints.groupsTable).snapshots(),
                     builder: (BuildContext context,
                         AsyncSnapshot<QuerySnapshot> snapshot) {
                       if (snapshot.hasError) {
@@ -106,7 +145,8 @@ class _HomePageState extends State<HomePage> {
                           child: Text(snapshot.error.toString()),
                         );
                       }
-                      if (snapshot.connectionState == ConnectionState.waiting) {
+                      if (snapshot.connectionState ==
+                          ConnectionState.waiting) {
                         return Center(
                           child: CircularLoadingIndicator(),
                         );
@@ -117,34 +157,52 @@ class _HomePageState extends State<HomePage> {
                         groups.add(GroupModel(
                             id: document.id,
                             userId: a['user_id'],
-                            title: a['group_name'],
-                            isExpandable: a['is_extendable']));
+                            name: a[Endpoints.groupName],
+                            createdAt: a['created_at'],
+                            isExpandable: true,
+                            isSelected: false));
                       }).toList();
-                      return ListView.builder(
-                          itemCount: groups.length,
-                          itemBuilder: (context, index) {
-                            return GroupWidget(
-                              groupModel: groups[index],
-                              onClick: () {
-                                groups[index].isExpandable = !groups[index].isExpandable;
-                                updateGroupItem(groups[index].isExpandable, groups[index].id);
-                              },
-                            );
-                          });
+                      groups.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                      context.read<GroupsCubit>().clearGroups();
+                      context.read<GroupsCubit>().initialList(groups);
+                      return BlocBuilder<GroupsCubit, GroupsState>(
+                        builder: (context, state) {
+                          if (state.groups.isEmpty) {
+                            return NoDataFound();
+                          } else {
+                            return ListView.builder(
+                                itemCount: state.groups.length,
+                                itemBuilder: (context, index) {
+                                  return GroupWidget(
+                                    groupModel: state.groups[index],
+                                    onClick: () {
+                                      context
+                                          .read<GroupsCubit>()
+                                          .updateExtendableSelection(state
+                                          .groups[index].id
+                                          .toString());
+                                    },
+                                    onAddItem: (String groupId) {
+                                      NavRouter.push(
+                                          context,
+                                          AddItemPage(
+                                            groupId: groupId,
+                                            userModel: user,
+                                          )).then((value) {
+                                        context.read<UserCubit>().loadUser();
+                                        setState(() {});
+                                      });
+                                    },
+                                    userModel: user,
+                                  );
+                                });
+                          }
+                        },
+                      );
                     })),
           ],
         ),
       ),
     );
-  }
-
-  Future<void> updateGroupItem(bool isExpandable, String id) {
-    CollectionReference groups = FirebaseFirestore.instance.collection('groups');
-    return groups.doc(id)
-        .update({'is_extendable': isExpandable})
-        .then((value) {})
-        .catchError((error) {
-      DisplayUtils.showErrorToast(context, error.message);
-    });
   }
 }

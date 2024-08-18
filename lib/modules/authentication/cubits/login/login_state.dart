@@ -1,7 +1,9 @@
 
 
 import 'package:equatable/equatable.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 
 enum LoginStatus {
   initial,
@@ -16,7 +18,7 @@ class LoginState extends Equatable {
   final bool isPasswordHidden;
   final bool isAutoValidate;
   final String message;
-  final GoogleSignInAccount? googleUser;
+  final UserModel userModel;
   final int roleId;
 
   LoginState({
@@ -24,7 +26,7 @@ class LoginState extends Equatable {
     required this.isPasswordHidden,
     required this.isAutoValidate,
     required this.message,
-    required this.googleUser,
+    required this.userModel,
     required this.roleId,
   });
 
@@ -34,7 +36,7 @@ class LoginState extends Equatable {
       isPasswordHidden: true,
       isAutoValidate: false,
       message: '',
-      googleUser: null,
+      userModel: UserModel.empty,
       roleId: -1,
     );
   }
@@ -50,7 +52,7 @@ class LoginState extends Equatable {
     bool? isPasswordHidden,
     bool? isAutoValidate,
     String? message,
-    GoogleSignInAccount? googleUser,
+    UserModel? userModel,
     int? roleId,
   }) {
     return LoginState(
@@ -58,7 +60,7 @@ class LoginState extends Equatable {
       isPasswordHidden: isPasswordHidden ?? this.isPasswordHidden,
       isAutoValidate: isAutoValidate ?? this.isAutoValidate,
       message: message ?? this.message,
-      googleUser: googleUser ?? this.googleUser,
+      userModel: userModel ?? this.userModel,
       roleId: roleId ?? this.roleId,
     );
   }

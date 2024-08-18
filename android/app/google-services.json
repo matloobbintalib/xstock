@@ -20,10 +20,6 @@
             "package_name": "com.appgemz.xstock",
             "certificate_hash": "2d99030aa98e054b6e6be563bd4a224d79e3ec72"
           }
-        },
-        {
-          "client_id": "900352737743-vc0mag0dm6j6onak34fhq58k8qfqsu8k.apps.googleusercontent.com",
-          "client_type": 3
         }
       ],
       "api_key": [
@@ -35,7 +31,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "900352737743-vc0mag0dm6j6onak34fhq58k8qfqsu8k.apps.googleusercontent.com",
+              "client_id": "900352737743-2siq9r5lb9pj6lavbjf1abogavkik756.apps.googleusercontent.com",
               "client_type": 3
             },
             {

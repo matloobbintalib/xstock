@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/common/repo/session_repository.dart';
 import 'package:xstock/ui/widgets/custom_switch.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
@@ -16,6 +18,13 @@ class PhoneVerificationWidget extends StatefulWidget {
 
 class _PhoneVerificationWidgetState extends State<PhoneVerificationWidget> {
   bool isSelected = false;
+  SessionRepository sessionRepository = sl<SessionRepository>();
+  @override
+  void initState() {
+    super.initState();
+    bool isEnable = sessionRepository.isEnableItemVibration();
+    isSelected = isEnable;
+  }
   @override
   Widget build(BuildContext context) {
     return OnClick(
@@ -33,10 +42,11 @@ class _PhoneVerificationWidgetState extends State<PhoneVerificationWidget> {
                 style: context.textTheme.bodyMedium,
               ),
             ),
-            CustomSwitch(onChanged: (value){
+            CustomSwitch(onChanged: (value) async{
               setState(() {
                 isSelected = value;
               });
+              await sessionRepository.setItemVibration(isSelected);
             }, value: isSelected)
           ],
         ),

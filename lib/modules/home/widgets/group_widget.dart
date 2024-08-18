@@ -1,25 +1,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:xstock/config/config.dart';
+import 'package:xstock/constants/api_endpoints.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
+import 'package:xstock/modules/home/cubits/send_notification/send_notification_cubit.dart';
 import 'package:xstock/modules/home/dialogs/delete_dialog.dart';
 import 'package:xstock/modules/home/dialogs/item_detail_dialog.dart';
 import 'package:xstock/modules/home/models/group_model.dart';
 import 'package:xstock/modules/home/models/item_model.dart';
-import 'package:xstock/modules/home/pages/add_item_page.dart';
+import 'package:xstock/modules/home/models/notification_input.dart';
 import 'package:xstock/modules/home/widgets/item_widget.dart';
 import 'package:xstock/ui/widgets/loading_indicator.dart';
 import 'package:xstock/ui/widgets/on_click.dart';
+import 'package:xstock/ui/widgets/toast_loader.dart';
 import 'package:xstock/utils/display/display_utils.dart';
+import 'package:xstock/utils/extensions/context_user.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
 class GroupWidget extends StatefulWidget {
   final GroupModel groupModel;
   final VoidCallback onClick;
+  final UserModel userModel;
+  final Function(String groupId) onAddItem;
 
   const GroupWidget(
-      {super.key, required this.groupModel, required this.onClick});
+      {super.key,
+      required this.groupModel,
+      required this.onClick,
+      required this.onAddItem,
+      required this.userModel});
 
   @override
   State<GroupWidget> createState() => _GroupWidgetState();
@@ -27,23 +38,47 @@ class GroupWidget extends StatefulWidget {
 
 class _GroupWidgetState extends State<GroupWidget> {
   List<ItemModel> items = [];
-  Stream<QuerySnapshot> itemsStream =
-      FirebaseFirestore.instance.collection('items').snapshots();
+  Stream<QuerySnapshot>? itemsStream;
+  CollectionReference usersCollection =
+      FirebaseFirestore.instance.collection(Endpoints.usersTable);
+  late CollectionReference groupsCollection;
+  late CollectionReference itemsCollection;
   int itemsCount = 0;
   int totalItems = 0;
+  CollectionReference outerItemsCollection =
+      FirebaseFirestore.instance.collection(Endpoints.itemsTable);
 
-  Future<void> deleteGroup(id) {
-    CollectionReference groups =
-    FirebaseFirestore.instance.collection('groups');
-    return groups.doc(id).delete().then((value) {
-      DisplayUtils.showToast(context, 'Group deleted successfully');
+  Future<void> deleteGroup(BuildContext context, id) async {
+    ToastLoader.show();
+    DocumentReference userRef = await usersCollection.doc(widget.userModel.id);
+    groupsCollection = await userRef.collection(Endpoints.groupsTable);
+    await groupsCollection.doc(id).delete().then((value) async {
+      ToastLoader.remove();
+      DisplayUtils.flutterShowToast('Group deleted successfully');
     }).catchError((error) {
-      DisplayUtils.showErrorToast(context, 'Failed to Delete Group');
+      ToastLoader.remove();
+      DisplayUtils.flutterShowToast('Failed to Delete Group');
     });
   }
 
   @override
+  void initState() {
+    super.initState();
+    initializeItemsStream();
+  }
+
+  void initializeItemsStream() {
+    DocumentReference userRef = usersCollection.doc(widget.userModel.id);
+    groupsCollection = userRef.collection(Endpoints.groupsTable);
+    itemsCollection = groupsCollection
+        .doc(widget.groupModel.id)
+        .collection(Endpoints.itemsTable);
+    itemsStream = itemsCollection.snapshots();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    var user = context.watchCurrentUser;
     return Column(
       children: [
         Row(
@@ -73,7 +108,7 @@ class _GroupWidgetState extends State<GroupWidget> {
                       width: 8,
                     ),
                     Text(
-                      widget.groupModel.title,
+                      widget.groupModel.name,
                       style: context.textTheme.headlineSmall
                           ?.copyWith(fontWeight: FontWeight.w600),
                     ),
@@ -100,9 +135,8 @@ class _GroupWidgetState extends State<GroupWidget> {
                         builder: (BuildContext context) {
                           return DeleteDialog(
                             title: 'group',
-                            onConfirmDelete: () async{
-                              await deleteGroup(widget.groupModel.id);
-                              NavRouter.pop(context);
+                            onConfirmDelete: () {
+                              deleteGroup(context, widget.groupModel.id);
                             },
                           );
                         });
@@ -117,11 +151,7 @@ class _GroupWidgetState extends State<GroupWidget> {
               visible: widget.groupModel.isExpandable,
               child: OnClick(
                   onTap: () {
-                    NavRouter.push(
-                        context,
-                        AddItemPage(
-                          groupId: widget.groupModel.id,
-                        ));
+                    widget.onAddItem(widget.groupModel.id);
                   },
                   child: SvgPicture.asset(
                       "assets/images/svg/add_item_button.svg")),
@@ -131,7 +161,12 @@ class _GroupWidgetState extends State<GroupWidget> {
         Visibility(
           visible: widget.groupModel.isExpandable,
           child: StreamBuilder<QuerySnapshot>(
-              stream: itemsStream,
+              stream: usersCollection
+                  .doc(widget.userModel.id)
+                  .collection(Endpoints.groupsTable)
+                  .doc(widget.groupModel.id)
+                  .collection(Endpoints.itemsTable)
+                  .snapshots(),
               builder: (BuildContext context,
                   AsyncSnapshot<QuerySnapshot> snapshot) {
                 if (snapshot.hasError) {
@@ -147,6 +182,15 @@ class _GroupWidgetState extends State<GroupWidget> {
                     child: CircularLoadingIndicator(),
                   );
                 }
+                if (snapshot.data!.docs.length == 3) {
+                  context.read<NotificationCubit>().sendEmailNotification(
+                      NotificationInput(
+                        name: user.branchName,
+                        message:
+                            'Your group ${widget.groupModel.name} have remaining 3 items in the stock',
+                      ),
+                      user.email);
+                }
                 items.clear();
                 itemsCount = 0;
                 totalItems = 0;
@@ -156,16 +200,24 @@ class _GroupWidgetState extends State<GroupWidget> {
                       widget.groupModel.id.toString()) {
                     items.add(
                       ItemModel(
-                          id: document.id,
-                          itemColor: a['color_code'],
-                          itemCount: a['item_count'] as int,
-                          itemName: a['item_name'],
-                          groupId: a['group_id']),
+                        id: document.id,
+                        color: a[Endpoints.itemColor],
+                        count: a[Endpoints.itemCount] as int,
+                        name: a[Endpoints.itemName],
+                        groupId: a['group_id'],
+                        minimumStockAlert: a[Endpoints.minimumStockAlert],
+                        stockImage: a[Endpoints.stockImage],
+                        expiryDate: a[Endpoints.expiryDate],
+                        isEnableExpiry: a[Endpoints.isEnableExpiry],
+                        userId: a[Endpoints.userId],
+                        createdAt: a['created_at'],
+                      ),
                     );
-                    var count = a['item_count'] as int;
+                    var count = a[Endpoints.itemCount] as int;
                     itemsCount = itemsCount + count;
                   }
                 }).toList();
+                items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
                 totalItems = items.length;
                 return MasonryGridView.count(
                     crossAxisCount: 2,
@@ -185,12 +237,15 @@ class _GroupWidgetState extends State<GroupWidget> {
                                 return ItemDetailDialog(
                                   itemModel: items[index],
                                   groupDocId: widget.groupModel.id,
+                                  userModel: user,
                                 );
                               });
                         },
                         child: ItemWidget(
                           itemModel: items[index],
                           index: index,
+                          userModel: user,
+                          groupId: widget.groupModel.id,
                         ),
                       );
                     });

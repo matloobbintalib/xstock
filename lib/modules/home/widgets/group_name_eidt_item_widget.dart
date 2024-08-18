@@ -22,7 +22,7 @@ class GroupNameEditItemWidget extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          model.title,
+          model.name,
           style: context.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w600,
               fontSize: 12,

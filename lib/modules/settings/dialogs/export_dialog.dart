@@ -1,25 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_email_sender/flutter_email_sender.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:csv/csv.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:xstock/config/routes/nav_router.dart';
+import 'package:xstock/constants/api_endpoints.dart';
 import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
 import 'package:xstock/modules/home/models/group_data_model.dart';
 import 'package:xstock/modules/home/models/item_data_model.dart';
-import 'package:xstock/modules/settings/pages/load_and_view_csv_page.dart';
+import 'package:xstock/modules/home/models/item_model.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/ui/widgets/toast_loader.dart';
 import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/utils.dart';
 import 'dart:io';
 
-
 class ExportDialog extends StatefulWidget {
-  const ExportDialog({super.key});
+  final UserModel userModel;
+
+  const ExportDialog({super.key, required this.userModel});
 
   @override
   State<ExportDialog> createState() => _ExportDialogState();
@@ -28,8 +32,19 @@ class ExportDialog extends StatefulWidget {
 class _ExportDialogState extends State<ExportDialog> {
   String filePath = '';
   List<GroupDataModel> groupsDataList = [];
-  UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
+  FirebaseFirestore fireStore = FirebaseFirestore.instance;
+  CollectionReference usersCollection =
+      FirebaseFirestore.instance.collection(Endpoints.usersTable);
+  late CollectionReference groupsCollection;
+  late CollectionReference itemsCollection;
+  bool shareAsFile = false;
 
+  @override
+  void initState() {
+    super.initState();
+    groupsCollection = fireStore.collection(Endpoints.groupsTable);
+    itemsCollection = fireStore.collection(Endpoints.itemsTable);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,17 +63,20 @@ class _ExportDialogState extends State<ExportDialog> {
           children: [
             Center(
                 child: Text(
-                  "Export",
-                  style: context.textTheme.headlineMedium?.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white),
-                )),
+              "Export",
+              style: context.textTheme.headlineMedium?.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white),
+            )),
             SizedBox(
               height: 15,
             ),
             PrimaryButton(
-              onPressed: () {},
+              onPressed: () {
+                shareAsFile = false;
+                _requestStoragePermission();
+              },
               title: 'Send via email',
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -67,16 +85,13 @@ class _ExportDialogState extends State<ExportDialog> {
               backgroundColor: Colors.black,
               borderColor: Colors.black,
             ),
-            SizedBox(height: 12,), PrimaryButton(
-              onPressed: () async{
-                /*Map<Permission, PermissionStatus> status = await [Permission.storage].request();
-                if(status[Permission.storage]!.isGranted){
-                  exportDataToCsvFile();
-                }*/
-                var isGranted = await _checkAndRequestStoragePermissions();
-                if(isGranted){
-                  exportDataToCsvFile();
-                }
+            SizedBox(
+              height: 12,
+            ),
+            PrimaryButton(
+              onPressed: () async {
+                shareAsFile = true;
+                _requestStoragePermission();
               },
               title: 'Save as file',
               fontSize: 12,
@@ -86,7 +101,10 @@ class _ExportDialogState extends State<ExportDialog> {
               backgroundColor: Colors.black,
               borderColor: Colors.black,
             ),
-            SizedBox(height: 12,), PrimaryButton(
+            SizedBox(
+              height: 12,
+            ),
+            PrimaryButton(
               onPressed: () {
                 NavRouter.pop(context);
               },
@@ -135,20 +153,28 @@ class _ExportDialogState extends State<ExportDialog> {
 
   void exportCSV() async {
     List<List<dynamic>> rows = [];
-    for(var group in groupsDataList){
-      String groupName = group.toJson()['groupName'];
-      List<dynamic> items = group.toJson()['items'];
+    for (var group in groupsDataList) {
+      String groupName = group.groupName;
+      String createdAt = group.createdAt;
+      List<ItemModel> items = group.items;
       for (var item in items) {
         List<dynamic> row = [];
         row.add(groupName); // Add groupName to each row
-
-        // Extract item_name, color_code, item_count
-        String itemName = item['item_name'];
-        String colorCode = item['color_code'];
-        int itemCount = item['item_count'];
-
         // Add item details to row
-        row.addAll([itemName, colorCode, itemCount]);
+        row.addAll([
+          item.id,
+          item.userId,
+          item.groupId,
+          item.color,
+          item.count,
+          item.name,
+          item.expiryDate,
+          item.minimumStockAlert,
+          item.stockImage,
+          item.isEnableExpiry,
+          createdAt,
+          item.createdAt,
+        ]);
         // Add row to rows list
         rows.add(row);
       }
@@ -160,8 +186,12 @@ class _ExportDialogState extends State<ExportDialog> {
     print(filePath);
     File file = File(filePath);
     await file.writeAsString(csv).then((value) {
-      ToastLoader.remove();
-      DisplayUtils.flutterShowToast('File exported successfully!');
+      if(shareAsFile){
+        ToastLoader.remove();
+        DisplayUtils.flutterShowToast('File exported successfully!');
+      }else{
+        sendEmail();
+      }
     }).onError((error, stackTrace) {
       ToastLoader.remove();
       print(error.toString());
@@ -169,57 +199,105 @@ class _ExportDialogState extends State<ExportDialog> {
     });
   }
 
-  Future<bool> _checkAndRequestStoragePermissions() async {
-    if (Platform.isAndroid) {
-      var status = await Permission.storage.status;
-      if (status.isDenied) {
-        await Permission.storage.request();
-        status = await Permission.storage.status;
+  Future<void> sendEmail() async {
+    final Email email = Email(
+      body: '',
+      subject: "",
+      recipients: ['hassamjr7@gmail.com'],
+      attachmentPaths: [filePath],
+      isHTML: false,
+    );
+    await FlutterEmailSender.send(email).then((value){
+      DisplayUtils.removeLoader();
+      DisplayUtils.showToast(context, 'Email send successfully!');
+    }).onError((error, stackTrace) {
+      DisplayUtils.removeLoader();
+      print("Error sending email: " + error.toString());
+      DisplayUtils.showErrorToast(context, error.toString());
+    });
+  }
+  Future<void> _requestStoragePermission() async {
+    var status = await Permission.storage.status;
+    if (status.isDenied) {
+      if (await Permission.storage.request().isGranted) {
+        exportDataToCsvFile();
+      } else if (await Permission.manageExternalStorage.request().isGranted) {
+        exportDataToCsvFile();
+      } else if (status.isPermanentlyDenied) {
+        openAppSettings();
       }
-      return status.isGranted;
     } else {
-      // On iOS, you cannot directly access the Downloads folder.
-      // You may prompt the user to choose the location via a file picker.
-      // Handle the iOS case based on your app's requirements.
-      return false;
+      exportDataToCsvFile();
+    }
+  }
+
+  Future<void> requestStoragePermission() async {
+    if (await Permission.storage.isGranted) {
+      // The permission is already granted
+      print('Storage permission already granted');
+    } else {
+      // Request the permission
+      var status = await Permission.storage.request();
+      if (status.isGranted) {
+        print('Storage permission granted');
+      } else if (status.isDenied) {
+        print('Storage permission denied');
+      } else if (status.isPermanentlyDenied) {
+        // Open app settings if the permission is permanently denied
+        openAppSettings();
+      }
     }
   }
 
   void exportDataToCsvFile() async {
     groupsDataList.clear();
-    FirebaseFirestore fireStore = FirebaseFirestore.instance;
-    CollectionReference groups = fireStore.collection('groups');
-    CollectionReference items = fireStore.collection('items');
     ToastLoader.show();
-    await groups.get().then((querySnapshot) async {
-      for (QueryDocumentSnapshot doc in querySnapshot.docs) {
-        if(doc['user_id'].toString() == userAccountRepository.getUserFromDb().user_id.toString()){
-          String groupName = doc['group_name'];
-          String groupId = doc.id;
-          await items.where('group_id', isEqualTo: groupId).get().then((userSnapshot) async {
-            List<ItemDataModel> itemsData = [];
-            itemsData.clear();
-            for (QueryDocumentSnapshot userDoc in userSnapshot.docs) {
-              ItemDataModel itemDataModel = ItemDataModel(
-                  itemColor: userDoc['color_code'],
-                  itemCount: userDoc['item_count'],
-                  itemName: userDoc['item_name']);
-              itemsData.add(itemDataModel);
-            }
-            groupsDataList.add(GroupDataModel(groupName: groupName, items: itemsData));
-          });
-        }
-      }
-    }).onError((error, stackTrace) {
-      ToastLoader.remove();
-      DisplayUtils.flutterShowToast(error.toString());
-    });
+    CollectionReference groupsCollection = usersCollection
+        .doc(widget.userModel.id)
+        .collection(Endpoints.groupsTable);
+    QuerySnapshot groupSnapshot = await groupsCollection.get();
+    for (QueryDocumentSnapshot groupDoc in groupSnapshot.docs) {
+      String groupId = groupDoc.id;
+      String groupName = groupDoc[Endpoints.groupName];
+      String createdAt = groupDoc['created_at'];
+      CollectionReference itemsCollection = usersCollection
+          .doc(widget.userModel.id)
+          .collection(Endpoints.groupsTable)
+          .doc(groupId)
+          .collection(Endpoints.itemsTable);
 
-    if(groupsDataList.isNotEmpty){
+      QuerySnapshot itemSnapshot = await itemsCollection.get();
+      List<ItemModel> itemsData = [];
+      itemsData.clear();
+      for (QueryDocumentSnapshot itemDoc in itemSnapshot.docs) {
+        ItemModel itemModel = ItemModel(
+          id: itemDoc['id'],
+          userId: itemDoc[Endpoints.userId],
+          color: itemDoc[Endpoints.itemColor],
+          count: itemDoc[Endpoints.itemCount],
+          name: itemDoc[Endpoints.itemName],
+          groupId: itemDoc['group_id'],
+          expiryDate: itemDoc[Endpoints.expiryDate],
+          minimumStockAlert: itemDoc[Endpoints.minimumStockAlert],
+          stockImage: itemDoc[Endpoints.stockImage],
+          isEnableExpiry: itemDoc[Endpoints.isEnableExpiry],
+          createdAt: itemDoc['created_at'],
+        );
+        itemsData.add(itemModel);
+      }
+      groupsDataList.add(GroupDataModel(
+          groupName: groupName,
+          createdAt: createdAt,
+          items: itemsData,
+          id: groupId,
+          userId: widget.userModel.id.toString()));
+    }
+    if (groupsDataList.isNotEmpty) {
       exportCSV();
-    }else{
+    } else {
       ToastLoader.remove();
-      DisplayUtils.flutterShowToast( 'Please add the groups and groups item to export the data');
+      DisplayUtils.flutterShowToast(
+          'Please add the groups and groups item to export the data');
     }
   }
 }

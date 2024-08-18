@@ -1,13 +1,11 @@
-import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:xstock/config/routes/nav_router.dart';
+import 'package:xstock/constants/api_endpoints.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/home/dialogs/stock_image_dialog.svg.dart';
-import 'package:xstock/modules/home/dialogs/upload_picture_dialog.dart';
-import 'package:xstock/modules/home/models/item_detail_model.dart';
 import 'package:xstock/modules/home/models/item_model.dart';
 import 'package:xstock/modules/home/pages/edit_item_page.dart';
 import 'package:xstock/ui/input/input_field.dart';
@@ -21,10 +19,14 @@ import 'package:xstock/utils/extensions/extended_context.dart';
 
 class ItemDetailDialog extends StatefulWidget {
   final ItemModel itemModel;
+  final UserModel userModel;
   final String groupDocId;
 
   const ItemDetailDialog(
-      {super.key, required this.itemModel, required this.groupDocId});
+      {super.key,
+      required this.itemModel,
+      required this.groupDocId,
+      required this.userModel});
 
   @override
   State<ItemDetailDialog> createState() => _ItemDetailDialogState();
@@ -37,9 +39,11 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
   TextEditingController minimumAlertCountController =
       new TextEditingController();
   TextEditingController dateController = new TextEditingController();
-  CollectionReference itemDetails =
-      FirebaseFirestore.instance.collection('item_details');
-  CollectionReference items = FirebaseFirestore.instance.collection('items');
+
+  CollectionReference usersCollection =
+      FirebaseFirestore.instance.collection(Endpoints.usersTable);
+  late CollectionReference groupsCollection;
+
   int _selectedTabIndex = 0;
   bool isEnableExpiry = false;
   int itemCount = 0;
@@ -52,10 +56,11 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
   @override
   void initState() {
     super.initState();
-    itemCount = widget.itemModel.itemCount;
-    inputCountController.text = widget.itemModel.itemCount.toString();
+    setItemData();
+    groupsCollection = usersCollection
+        .doc(widget.userModel.id)
+        .collection(Endpoints.groupsTable);
     _tabController = TabController(length: 2, vsync: this);
-    getItemById(widget.itemModel.id);
   }
 
   @override
@@ -66,84 +71,30 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
 
   void addItemDetails() async {
     ToastLoader.show();
-    updateItemCount(itemCount, widget.itemModel.id);
-    DocumentReference docRef = itemDetails.doc(widget.itemModel.id);
-    await docRef.set({
-      'group_id': widget.itemModel.groupId,
-      'item_id': widget.itemModel.id,
-      'color_code': widget.itemModel.itemColor,
-      "item_name": widget.itemModel.itemName,
-      "item_count": itemCount,
-      "is_enable_expiry": isEnableExpiry,
-      "current_date":
-          changeDateTimeFormat(DateTime.now(), 'MM/dd/yyyy  hh:ss a'),
-      "expiry_date":
-          isEnableExpiry ? dateController.text.trim().toString() : '',
-      "minimum_stock_alert": minimumAlertCountController.text.toString(),
-      "stock_image": '',
-    }).then((value) {
+    DocumentReference docRef = groupsCollection.doc(widget.groupDocId);
+    CollectionReference itemsCollection =
+        docRef.collection(Endpoints.itemsTable);
+    DocumentReference itemRef = itemsCollection.doc(widget.itemModel.id);
+    ItemModel itemModel = ItemModel(
+        userId: widget.userModel.id.toString(),
+        color: widget.itemModel.color,
+        count: itemCount,
+        name: widget.itemModel.name,
+        groupId: widget.groupDocId.toString(),
+        expiryDate: isEnableExpiry ? dateController.text.trim().toString() : '',
+        minimumStockAlert:
+            int.parse(minimumAlertCountController.text.toString()),
+        stockImage: '',
+        isEnableExpiry: isEnableExpiry,
+        createdAt: widget.itemModel.createdAt);
+    await itemRef.set(itemModel.toMap()).then((value) {
       ToastLoader.remove();
       DisplayUtils.showToast(context, 'Item details added successfully');
       NavRouter.pop(context);
     }).onError((error, stackTrace) {
       ToastLoader.remove();
-      DisplayUtils.flutterShowToast( error.toString());
+      DisplayUtils.flutterShowToast(error.toString());
     });
-  }
-
-  void getItemById(String documentId) async {
-    try {
-      ToastLoader.show();
-      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
-          .collection('item_details')
-          .doc(documentId)
-          .get();
-      if (docSnapshot.exists) {
-        String jsonString = json.encode(docSnapshot.data());
-        print(jsonString);
-        Map<String, dynamic> jsonMap = json.decode(jsonString);
-        Item item = Item.fromJson(jsonMap);
-        minimumAlertCountController.text = item.minimumStockAlert.toString();
-        dateController.text = item.expiryDate.toString();
-        isEnableExpiry = item.isEnableExpiry;
-        ToastLoader.remove();
-      } else {
-        ToastLoader.remove();
-      }
-    } catch (e) {
-      ToastLoader.remove();
-      DisplayUtils.flutterShowToast('Error getting document: $e');
-    }
-  }
-
-  Future<void> updateItemCount(int count, String id) {
-    return items
-        .doc(id)
-        .update({'item_count': count})
-        .then((value) {})
-        .catchError((error) {
-          DisplayUtils.flutterShowToast( error.message);
-        });
-  }
-
-  Color parseColor(String colorString) {
-    // Extract hexadecimal color value using regular expression
-    RegExp regex = RegExp(r"0x([\da-fA-F]+)");
-    String? hex = regex.stringMatch(colorString);
-
-    if (hex != null) {
-      // Remove "0x" prefix
-      hex = hex.replaceAll("0x", "");
-
-      // Parse hexadecimal value to integer
-      int colorValue = int.parse(hex, radix: 16);
-
-      // Construct Color object using parsed value
-      return Color(colorValue);
-    } else {
-      // Return a default color in case of invalid input
-      return Colors.transparent;
-    }
   }
 
   @override
@@ -163,7 +114,7 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                   borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20)),
-                  color: parseColor(widget.itemModel.itemColor)),
+                  color: Color(int.parse(widget.itemModel.color))),
               padding: EdgeInsets.only(left: 20, right: 16) +
                   EdgeInsets.symmetric(vertical: 12),
               child: Row(
@@ -175,7 +126,7 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                   ),
                   Expanded(
                       child: Text(
-                    widget.itemModel.itemName,
+                    widget.itemModel.name,
                     textAlign: TextAlign.center,
                     style: context.textTheme.headlineMedium?.copyWith(
                         color: Colors.black, fontWeight: FontWeight.w600),
@@ -187,7 +138,8 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                             context,
                             EditItemPage(
                               itemModel: widget.itemModel,
-                              groupDocId: widget.groupDocId,
+                              groupId: widget.groupDocId,
+                              userModel: widget.userModel,
                             ));
                       },
                       child: SvgPicture.asset(
@@ -290,7 +242,10 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                           showDialog(
                               context: context,
                               builder: (BuildContext context) {
-                                return StockImageDialog(itemModel: widget.itemModel,);
+                                return StockImageDialog(
+                                  itemModel: widget.itemModel,
+                                  userModel: widget.userModel,
+                                );
                               });
                         },
                         child: Padding(
@@ -378,7 +333,8 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                                 .isNotEmpty) {
                               if (isEnableExpiry) {
                                 if (dateController.text.trim().isEmpty) {
-                                  DisplayUtils.flutterShowToast("Select expiry date");
+                                  DisplayUtils.flutterShowToast(
+                                      "Select expiry date");
                                 } else {
                                   addItemDetails();
                                 }
@@ -386,7 +342,8 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
                                 addItemDetails();
                               }
                             } else {
-                              DisplayUtils.flutterShowToast("Enter minimum stock alert count");
+                              DisplayUtils.flutterShowToast(
+                                  "Enter minimum stock alert count");
                             }
                           },
                           title: 'Confirm',
@@ -405,6 +362,17 @@ class _ItemDetailDialogState extends State<ItemDetailDialog>
         ),
       ),
     );
+  }
+
+  void setItemData() {
+    itemCount = widget.itemModel.count;
+    inputCountController.text = widget.itemModel.count.toString();
+    isEnableExpiry = widget.itemModel.isEnableExpiry;
+    minimumAlertCountController.text =
+        widget.itemModel.minimumStockAlert.toString();
+    if (isEnableExpiry) {
+      dateController.text = widget.itemModel.expiryDate;
+    }
   }
 }
 

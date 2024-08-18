@@ -1,13 +1,20 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:xstock/config/config.dart';
+import 'package:xstock/constants/api_endpoints.dart';
 import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
+import 'package:xstock/modules/home/models/group_model.dart';
 import 'package:xstock/ui/input/input_field.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/ui/widgets/toast_loader.dart';
+import 'package:xstock/utils/custom_date_time_picker.dart';
 import 'package:xstock/utils/display/display_utils.dart';
+import 'package:xstock/utils/extensions/context_user.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
 class NewGroupDialog extends StatefulWidget {
@@ -19,28 +26,44 @@ class NewGroupDialog extends StatefulWidget {
 
 class _NewGroupDialogState extends State<NewGroupDialog> {
   TextEditingController nameController = TextEditingController();
-  CollectionReference groups = FirebaseFirestore.instance.collection('groups');
+  CollectionReference usersCollection =
+      FirebaseFirestore.instance.collection(Endpoints.usersTable);
   UserAccountRepository userAccountRepository = sl<UserAccountRepository>();
 
-  void addGroup() async{
+  void addGroup(String userId) async {
     ToastLoader.show();
-    await groups.add({
-      'group_name': nameController.text.trim().toString(),
-      'is_extendable': true,
-      "user_id": userAccountRepository.getUserFromDb().user_id
-    }).then((value) {
-      print(value.id);
+    DocumentReference userRef = usersCollection.doc(userId);
+    CollectionReference groupsCollection =
+        userRef.collection(Endpoints.groupsTable);
+    String randomString = generateRandomString(10);
+    DateTime now = DateTime.now();
+    Timestamp timestamp = Timestamp.fromDate(now);
+    String groupRef = '${randomString}${timestamp.millisecondsSinceEpoch}';
+    GroupModel groupModel = GroupModel(
+        id: groupRef,
+        userId: userId.toString(),
+        name: nameController.text.trim().toString(),
+        createdAt: changeDateTimeFormat(DateTime.now(), 'dd/MM/yyyy HH:mm:ss'));
+    await groupsCollection.doc(groupRef).set(groupModel.toMap()).then((value) {
       ToastLoader.remove();
       DisplayUtils.showToast(context, 'Group added successfully');
       NavRouter.pop(context);
-    }).onError((error, stackTrace){
+    }).onError((error, stackTrace) {
       ToastLoader.remove();
-      DisplayUtils.flutterShowToast( error.toString());
+      DisplayUtils.flutterShowToast(error.toString());
     });
+  }
+
+  String generateRandomString(int len) {
+    var r = Random();
+    const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz';
+    return List.generate(len, (index) => _chars[r.nextInt(_chars.length)])
+        .join();
   }
 
   @override
   Widget build(BuildContext context) {
+    var user = context.watchCurrentUser;
     return Dialog(
       backgroundColor: AppColors.fieldColor,
       insetPadding: EdgeInsets.symmetric(horizontal: 20),
@@ -81,7 +104,9 @@ class _NewGroupDialogState extends State<NewGroupDialog> {
                 fillColor: Colors.black,
                 keyboardType: TextInputType.name,
                 textInputAction: TextInputAction.done),
-            SizedBox(height: 16,),
+            SizedBox(
+              height: 16,
+            ),
             Row(
               children: [
                 Expanded(
@@ -101,7 +126,7 @@ class _NewGroupDialogState extends State<NewGroupDialog> {
                 Expanded(
                   child: PrimaryButton(
                     onPressed: () {
-                      addGroup();
+                      addGroup(user.id.toString());
                     },
                     title: 'Okay',
                     height: 50,

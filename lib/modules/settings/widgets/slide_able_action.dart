@@ -1,3 +1,4 @@
+/*
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -96,27 +97,96 @@ class CustomSlidableAction extends StatelessWidget {
   /// Typically the action's icon or label.
   final Widget child;
 
-  Future<void> deleteUser(id, BuildContext context) async{
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<void> deleteUser(String email, BuildContext context) async{
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('users')
-        .where('user_id', isEqualTo: id)
+        .where('email', isEqualTo: email)
         .get();
+
     if (querySnapshot.docs.isNotEmpty) {
-      CollectionReference users = FirebaseFirestore.instance.collection('users');
-      return users.doc(querySnapshot.docs.first.id).delete().then((value) async {
-        await FirebaseAuth.instance.signOut().then((value)async {
-          await userAccountRepository.logout();
+      String docId = querySnapshot.docs.first.id;
+      await _firestore.collection('users').doc(docId).delete().then((value)async {
+        if(_auth.currentUser != null){
+          await _auth.currentUser!.delete().then((value)async {
+            await userAccountRepository.logout();
+            ToastLoader.remove();
+            DisplayUtils.showToast(context, 'User deleted successfully');
+            NavRouter.pushAndRemoveUntil(
+                context, LoginPage());
+          }).onError((error, stackTrace) {
+            print('Error -${error}');
+            ToastLoader.remove();
+            DisplayUtils.showToast(context, error.toString());
+          });
+        }else{
+          print('Error Failed to delete user');
           ToastLoader.remove();
-          DisplayUtils.showToast(context, 'User deleted successfully');
-          NavRouter.pushAndRemoveUntil(
-              context, LoginPage());
-        }).onError((error, stackTrace) {
-          ToastLoader.remove();
-          DisplayUtils.showToast(context, error.toString());
-        });
+          DisplayUtils.showToast(context, 'Failed to delete user!');
+        }
       }).catchError((error) {
-        DisplayUtils.showErrorToast(context, 'Failed to Delete User');
+        ToastLoader.remove();
+        print('Error -- ${error.toString()}');
+        DisplayUtils.showErrorToast(context, error.toString());
       });
+    }
+  }
+
+  Future<void> deleteGroupsAndItemsByEmail(String email, BuildContext context) async {
+    FirebaseFirestore fireStore = FirebaseFirestore.instance;
+    try {
+      // Step 1: Get all groups with the specified email
+      QuerySnapshot groupSnapshot = await fireStore
+          .collection('groups')
+          .where('user_id', isEqualTo: email)
+          .get();
+
+      for (QueryDocumentSnapshot groupDoc in groupSnapshot.docs) {
+        String groupId = groupDoc.id;
+        // Step 2: Get all items with the specified group_id
+        QuerySnapshot itemSnapshot = await fireStore
+            .collection('items')
+            .where('group_id', isEqualTo: groupId)
+            .get();
+
+        // Step 3: Delete each item
+        for (QueryDocumentSnapshot itemDoc in itemSnapshot.docs) {
+          String itemId = itemDoc.id;
+          await deleteItemDetailsByItemId(itemId);
+          await fireStore.collection('items').doc(itemDoc.id).delete();
+        }
+        // Step 4: Delete the group
+        await fireStore.collection('groups').doc(groupId).delete();
+      }
+      deleteUser(userAccountRepository.getUserFromDb().email, context);
+    } catch (e) {
+      ToastLoader.remove();
+      DisplayUtils.flutterShowToast(e.toString());
+      print(e.toString());
+    }
+  }
+
+
+  Future<void> deleteItemDetailsByItemId(String itemId) async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    try {
+      // Get all documents with the specified item_id
+      QuerySnapshot querySnapshot = await firestore
+          .collection('item_details')
+          .where('item_id', isEqualTo: itemId)
+          .get();
+
+      // Delete each document from the 'items_details' collection
+      for (QueryDocumentSnapshot doc in querySnapshot.docs) {
+        // Delete the item detail document
+        await firestore.collection('item_details').doc(doc.id).delete();
+      }
+    } catch (e) {
+      ToastLoader.remove();
+      DisplayUtils.flutterShowToast(e.toString());
     }
   }
 
@@ -127,15 +197,15 @@ class CustomSlidableAction extends StatelessWidget {
         bool isLogged = await Dialogs.showDeleteAccountConfirmationDialog(context);
         if(isLogged){
           ToastLoader.show();
-          deleteUser(userAccountRepository.getUserFromDb().user_id, context);
+          deleteGroupsAndItemsByEmail(userAccountRepository.getUserFromDb().email,context);
         }
       },
       child: Container(
         height: 60,
         width: 60,
         decoration: BoxDecoration(
-          color:Colors.red,
-          borderRadius: BorderRadius.circular(16)
+            color:Colors.red,
+            borderRadius: BorderRadius.circular(16)
         ),
         padding: EdgeInsets.all(18),
         child: child,
@@ -226,3 +296,4 @@ class SlidableActionTest extends StatelessWidget {
     );
   }
 }
+*/

@@ -1,11 +1,12 @@
 import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/settings/models/account_title_model.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
 class AccountTile extends StatelessWidget {
-  final AccountTitleModel model;
+  final UserModel model;
   final Color? backgroundColor;
   final Color titleColor;
 
@@ -39,7 +40,7 @@ class AccountTile extends StatelessWidget {
                       fontWeight: FontWeight.w500),
                 ),
                 Text(
-                  model.name,
+                  model.branchName,
                   style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 12,

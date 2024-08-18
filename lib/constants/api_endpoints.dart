@@ -1,40 +1,38 @@
 class Endpoints {
 
-  // Image URL
-  // static const String imageUrl = 'https://psykee.cyberasol.com/';
-  static const String imageUrl = 'http://203.175.74.162/';
-
-  // Auth
-  static const String login = '/login';
-  static const String signup = '/advisor-register';
-  static const String logout = '/logout';
-  static const String socialSignup = '/social-signup';
-  static const String check = '/check';
-
-  // Lists
-  static const String getCategories = '/categories';
-  static const String getSkills = '/skills';
-  static const String getTools = '/tools';
-  static const String getLanguages = '/languages';
-  static const String getAppointmentsList = '/appointment';
-  static const String changeAppointmentStatus = '/appointment';
-  static const String getWalletBalance = '/wallet-balance';
-  static const String chatAttachment = '/chat-attachment';
-
-  //General
-  static const String dashboard = '/dashboard';
+  //table names
+  static const String itemsTable = 'Items';
+  static const String groupsTable = 'Groups';
+  static const String usersTable = 'Users';
 
 
-  //Profile
-  static const String updateProfile = '/update-advisor-profile';
-  static const String getProfile = '/user-profile';
+  //keys
 
-  //Availability
-  static const String schedule = '/schedule';
-  static const String specialSchedule = '/special-schedule';
+  //auth
+  static const String userId = 'user_id';
+  static const String deviceId = 'device_id';
+  static const String email = 'email';
+  static const String branchName = 'branch_name';
+  static const String password = 'password';
+  static const String fcmToken = 'fcm_token';
 
-  /// Forgot Password
-  static const String sendOtp = '/users/sendOtp';
-  static const String verifyOtp = '/users/verifyOtp';
-  static const String resetPassword = '/users/resetUserPassword';
+  //item
+  static const String itemId = 'id';
+  static const String itemColor = 'color';
+  static const String itemName = 'name';
+  static const String itemCount = 'count';
+  static const String currentDate = 'current_date';
+  static const String minimumStockAlert = 'minimum_stock_alert';
+  static const String stockImage = 'stock_image';
+  static const String expiryDate = 'expiry_date';
+  static const String isEnableExpiry = 'is_enable_expiry';
+
+  //group
+  static const String groupId = 'id';
+  static const String groupName = 'name';
+  static const String isExtendable = 'is_extendable';
+
+  //Notification
+  static const String sendEmailNotification = '/sendEmailNotification';
+  static const String sendNotification = '/sendNotification';
 }

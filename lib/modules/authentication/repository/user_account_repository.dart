@@ -42,6 +42,7 @@ class UserAccountRepository {
   Future<void> logout() async {
     await sessionRepository.setLoggedIn(false);
     await sessionRepository.removeToken();
+    await sessionRepository.setItemVibration(false);
     await removeUserFromDb();
     _log.i('logout successfully');
   }

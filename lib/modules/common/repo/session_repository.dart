@@ -37,4 +37,15 @@ class SessionRepository {
     await _authSecuredStorage.removeToken();
     _log.i('token removed');
   }
+
+  bool isEnableItemVibration() {
+    bool isEnableItemVibration = _storageService.getBool(StorageKeys.isEnableItemVibration);
+    _log.i('isEnableItemVibration: $isEnableItemVibration');
+    return isEnableItemVibration;
+  }
+
+  Future<void> setItemVibration(bool value) async {
+    await _storageService.setBool(StorageKeys.isEnableItemVibration, value);
+    _log.i('setItemVibration $value');
+  }
 }

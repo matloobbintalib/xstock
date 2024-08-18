@@ -2,9 +2,12 @@ import 'package:bloc/bloc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:xstock/constants/api_endpoints.dart';
+import 'package:xstock/core/di/service_locator.dart';
 import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
 import 'package:xstock/modules/common/repo/session_repository.dart';
+import '../../../../core/notifications/cloud_messaging_api.dart';
 import 'login_state.dart';
 
 class LoginCubit extends Cubit<LoginState> {
@@ -12,7 +15,8 @@ class LoginCubit extends Cubit<LoginState> {
       : super(LoginState.initial());
 
   SessionRepository sessionRepository;
-  CollectionReference users = FirebaseFirestore.instance.collection('users');
+  CollectionReference usersCollection =
+      FirebaseFirestore.instance.collection(Endpoints.usersTable);
   UserAccountRepository userAccountRepository;
 
   void toggleShowPassword() => emit(state.copyWith(
@@ -25,35 +29,22 @@ class LoginCubit extends Cubit<LoginState> {
         loginStatus: LoginStatus.initial,
       ));
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(String email, String password, String deviceId) async {
     emit(state.copyWith(loginStatus: LoginStatus.loading));
     try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .get();
-      if (querySnapshot.docs.isNotEmpty) {
-        if (querySnapshot.docs.first.get('email').toString().isNotEmpty) {
-          UserCredential credential = await FirebaseAuth.instance
-              .signInWithEmailAndPassword(email: email, password: password);
-          if (credential.user != null) {
-            await sessionRepository.setLoggedIn(true);
-            await userAccountRepository.saveUserInDb(UserModel(
-                branch_name: credential.user!.displayName.toString(),
-                email: credential.user!.email.toString(),
-                user_id: querySnapshot.docs.first.get('user_id')));
-            emit(state.copyWith(
-                loginStatus: LoginStatus.success,
-                message: "Login successfully!"));
-          } else {
-            emit(state.copyWith(
-                loginStatus: LoginStatus.error,
-                message: "Something went wrong"));
-          }
-        } else {
-          emit(state.copyWith(
-              loginStatus: LoginStatus.error, message: "User not found"));
-        }
+      UserCredential credential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+      if (credential.user != null) {
+        credential.user?.displayName;
+        await sessionRepository.setLoggedIn(true);
+        await userAccountRepository.saveUserInDb(UserModel(
+            id: credential.user?.uid,
+            branchName: credential.user?.displayName ?? '',
+            email: email,
+            alertEmail: email,
+            deviceId: deviceId));
+        emit(state.copyWith(
+            loginStatus: LoginStatus.success, message: "Login successfully!"));
       } else {
         emit(state.copyWith(
             loginStatus: LoginStatus.error, message: "User not found"));
@@ -88,103 +79,87 @@ class LoginCubit extends Cubit<LoginState> {
   Future<void> socialSignIn() async {
     emit(state.copyWith(loginStatus: LoginStatus.loading));
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if(googleUser != null) {
+      final FirebaseAuth _auth = FirebaseAuth.instance;
+      final GoogleSignIn _googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+      if(userCredential.user != null){
         await GoogleSignIn().signOut();
         QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-            .collection('users')
+            .collection(Endpoints.usersTable)
             .where('email', isEqualTo: googleUser.email)
             .get();
         if (querySnapshot.docs.isNotEmpty) {
-          if (querySnapshot.docs.first.get('email').toString().isNotEmpty) {
-            final userData = await googleUser.authentication;
-            final googleCredential = GoogleAuthProvider.credential(
-                accessToken: userData.accessToken, idToken: userData.idToken);
-            UserCredential credential = await FirebaseAuth.instance
-                .signInWithCredential(googleCredential);
-            if (credential.user != null) {
-              await sessionRepository.setLoggedIn(true);
-              await userAccountRepository.saveUserInDb(UserModel(
-                  branch_name: credential.user!.displayName.toString(),
-                  email: credential.user!.email.toString(),
-                  user_id: querySnapshot.docs.first.get('user_id')));
-              emit(state.copyWith(
-                  loginStatus: LoginStatus.success,
-                  message: "Login successfully!"));
-            }else {
-              emit(state.copyWith(
-                  loginStatus: LoginStatus.success,
-                  message: "Something went wrong"));
-            }
-          } else {
-            emit(state.copyWith(
-                loginStatus: LoginStatus.userNotFound,googleUser: googleUser));
-          }
-        } else {
+          await sessionRepository.setLoggedIn(true);
+          UserModel userModel = UserModel(
+              id: querySnapshot.docs.first.get('id'),
+              branchName: querySnapshot.docs.first.get('branch_name'),
+              email: querySnapshot.docs.first.get('email'),
+              alertEmail: querySnapshot.docs.first.get('alert_email'),
+              deviceId: querySnapshot.docs.first.get('device_id'));
+          await userAccountRepository.saveUserInDb(userModel);
           emit(state.copyWith(
-              loginStatus: LoginStatus.userNotFound,googleUser: googleUser));
+              loginStatus: LoginStatus.success,
+              message: "Login successfully!"));
         }
-      }else{
+        else{
+          UserModel userModel = UserModel(
+              id: userCredential.user!.uid,
+              branchName: '',
+              alertEmail: userCredential.user!.email.toString(),
+              email: userCredential.user!.email.toString(), deviceId: '',);
+          emit(state.copyWith(
+              loginStatus: LoginStatus.userNotFound, userModel: userModel));
+        }
+      }else {
         emit(state.copyWith(
-            loginStatus: LoginStatus.error, message: "User not found"));
+            loginStatus: LoginStatus.error,message:  'Something went wrong'));
       }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'invalid-email') {
         emit(state.copyWith(
-            loginStatus: LoginStatus.error,
-            message: "Email is not valid"));
+            loginStatus: LoginStatus.error, message: "Email is not valid"));
       } else if (e.code == 'user-not-found') {
         emit(state.copyWith(
-            loginStatus: LoginStatus.error,
-            message: "User not found"));
-      }else{
-        emit(state.copyWith(
-            loginStatus: LoginStatus.error, message: e.message));
+            loginStatus: LoginStatus.error, message: "User not found"));
+      } else {
+        emit(
+            state.copyWith(loginStatus: LoginStatus.error, message: e.message));
       }
-    } catch (e) {
       emit(state.copyWith(
           loginStatus: LoginStatus.error, message: e.toString()));
     }
   }
 
-  Future<void> socialSignUp(String branchName,String userId, GoogleSignInAccount googleUser) async {
+  Future<void> socialSignUp(String branchName, String deviceId, UserModel userModel) async {
     emit(state.copyWith(loginStatus: LoginStatus.loading));
     try {
-      await users.add({
-        'branch_name': branchName,
-        'email': googleUser.email,
-        "user_id": userId
-      }).then((value) async {
-        final userData = await googleUser.authentication;
-        final googleCredential = GoogleAuthProvider.credential(
-            accessToken: userData.accessToken, idToken: userData.idToken);
-        UserCredential credential = await FirebaseAuth.instance
-            .signInWithCredential(googleCredential);
-        if (credential.user != null) {
-          await credential.user!
-              .updateProfile(displayName: branchName).then((value)async {
-            await sessionRepository.setLoggedIn(true);
-            await userAccountRepository.saveUserInDb(UserModel(
-                branch_name: branchName,
-                email: credential.user!.email.toString(),
-                user_id: userId));
-            emit(state.copyWith(
-                loginStatus: LoginStatus.success,
-                message: "Login successfully!"));
-          });
-        }else {
-          emit(state.copyWith(
-              loginStatus: LoginStatus.success,
-              message: "Something went wrong"));
-        }
+      String fcmToken = await sl<CloudMessagingApi>().getFcmToken() ?? '';
+      userModel.fcmToken = fcmToken;
+      userModel.deviceId = deviceId;
+      userModel.branchName = branchName;
+      await usersCollection
+          .doc(userModel.id)
+          .set(userModel.toMap())
+          .then((value) async {
+        await sessionRepository.setLoggedIn(true);
+        await userAccountRepository.saveUserInDb(userModel);
+        emit(state.copyWith(
+            loginStatus: LoginStatus.success,
+            message: "Login successfully!", userModel: userModel));
       }).catchError((error) {
         emit(state.copyWith(
-            loginStatus: LoginStatus.error,message: error.toString()));
+            loginStatus: LoginStatus.error, message: error.toString()));
       });
     } on FirebaseAuthException catch (e) {
-      emit(state.copyWith(
-          loginStatus: LoginStatus.success,
-          message: e.message));
+      emit(
+          state.copyWith(loginStatus: LoginStatus.success, message: e.message));
     } catch (e) {
       emit(state.copyWith(
           loginStatus: LoginStatus.error, message: e.toString()));

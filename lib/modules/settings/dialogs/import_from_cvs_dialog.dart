@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:xstock/constants/app_colors.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/settings/dialogs/export_dialog.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/utils/utils.dart';
 
 class ImportFromCvsDialog extends StatelessWidget {
-  const ImportFromCvsDialog({super.key});
+  final UserModel userModel;
+  const ImportFromCvsDialog({super.key, required this.userModel});
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +47,7 @@ class ImportFromCvsDialog extends StatelessWidget {
             PrimaryButton(
               onPressed: () {
                 showDialog(context: (context), builder: (context){
-                  return ExportDialog();
+                  return ExportDialog(userModel: userModel,);
                 });
               },
               title: 'Export Template ',

@@ -31,9 +31,7 @@ class DevEnvironment extends Environment {
   DevEnvironment()
       : super(
     name: 'Dev',
-    // baseUrl: 'http://psykee.cyberasol.com/api',
-    // baseUrl: 'http://172.16.23.168/psykee/public/api',
-    baseUrl: 'http://203.175.74.162/api',
+    baseUrl: 'https://notifications.xstock.me/api',
   );
 }
 
@@ -42,8 +40,6 @@ class ProdEnvironment extends Environment {
   ProdEnvironment()
       : super(
     name: 'Prod',
-    // baseUrl: 'http://psykee.cyberasol.com/api',
-    // baseUrl: 'http://172.16.23.168/psykee/public/api',
-    baseUrl: 'http://203.175.74.162/api',
+    baseUrl: 'https://notifications.xstock.me/api',
   );
 }

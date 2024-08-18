@@ -1,59 +1,71 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:vibration/vibration.dart';
+import 'package:xstock/constants/api_endpoints.dart';
+import 'package:xstock/constants/constants.dart';
+import 'package:xstock/core/di/service_locator.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
+import 'package:xstock/modules/common/repo/session_repository.dart';
 import 'package:xstock/modules/home/models/item_model.dart';
 import 'package:xstock/utils/display/display_utils.dart';
 import 'package:xstock/utils/extensions/extended_context.dart';
 
 class ItemWidget extends StatefulWidget {
   final ItemModel itemModel;
+  final UserModel userModel;
+  final String groupId;
   final int index;
 
-  const ItemWidget({super.key, required this.index, required this.itemModel});
+  const ItemWidget(
+      {super.key,
+      required this.index,
+      required this.itemModel,
+      required this.userModel,
+      required this.groupId});
 
   @override
   State<ItemWidget> createState() => _ItemWidgetState();
 }
 
 class _ItemWidgetState extends State<ItemWidget> {
-  CollectionReference items = FirebaseFirestore.instance.collection('items');
+  CollectionReference usersCollection =
+      FirebaseFirestore.instance.collection(Endpoints.usersTable);
+  late CollectionReference groupsCollection;
+  late CollectionReference itemsCollection;
+  SessionRepository sessionRepository = sl<SessionRepository>();
+  CollectionReference outerItemsCollection =
+      FirebaseFirestore.instance.collection(Endpoints.itemsTable);
 
-  Color parseColor(String colorString) {
-    // Extract hexadecimal color value using regular expression
-    RegExp regex = RegExp(r"0x([\da-fA-F]+)");
-    String? hex = regex.stringMatch(colorString);
-
-    if (hex != null) {
-      // Remove "0x" prefix
-      hex = hex.replaceAll("0x", "");
-
-      // Parse hexadecimal value to integer
-      int colorValue = int.parse(hex, radix: 16);
-
-      // Construct Color object using parsed value
-      return Color(colorValue);
-    } else {
-      // Return a default color in case of invalid input
-      return Colors.transparent;
-    }
+  void initializeItemsCollection() async {
+    DocumentReference userRef = usersCollection.doc(widget.userModel.id);
+    groupsCollection = userRef.collection(Endpoints.groupsTable);
+    itemsCollection =
+        groupsCollection.doc(widget.groupId).collection(Endpoints.itemsTable);
   }
 
   Future<void> updateItemCount(int count, String id) {
-    return items
+    return itemsCollection
         .doc(id)
-        .update({'item_count': count})
-        .then((value) {})
-        .catchError((error) {
-          DisplayUtils.showErrorToast(context, error.message);
-        });
+        .update({Endpoints.itemCount: count}).then((value) async {
+      outerItemsCollection.doc(id).update({Endpoints.itemCount: count});
+    }).catchError((error) {
+      DisplayUtils.showErrorToast(context, error.message);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initializeItemsCollection();
   }
 
   @override
   Widget build(BuildContext context) {
+    var code = int.parse(widget.itemModel.color);
     return Container(
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: parseColor(widget.itemModel.itemColor)),
+          borderRadius: BorderRadius.circular(20), color: Color(code)),
       padding: EdgeInsets.only(left: 10, top: 10),
       child: Column(
         children: [
@@ -63,7 +75,7 @@ class _ItemWidgetState extends State<ItemWidget> {
               children: [
                 Expanded(
                     child: Text(
-                  widget.itemModel.itemName,
+                  widget.itemModel.name,
                   style: context.textTheme.headlineSmall
                       ?.copyWith(color: Colors.black, fontSize: 16),
                 )),
@@ -77,26 +89,38 @@ class _ItemWidgetState extends State<ItemWidget> {
           Row(
             children: [
               IconButton(
-                  onPressed: () {
-                    int value = widget.itemModel.itemCount;
-                    if(value > 1) {
+                  onPressed: () async {
+                    int value = widget.itemModel.count;
+                    if (value > 0) {
                       value--;
-                      updateItemCount(value, widget.itemModel.id);
+                      updateItemCount(value, widget.itemModel.id.toString());
+                      bool isEnable = sessionRepository.isEnableItemVibration();
+                      if (isEnable) {
+                        if (await Vibration.hasVibrator() == true) {
+                          Vibration.vibrate();
+                        }
+                      }
                     }
                   },
                   icon: SvgPicture.asset("assets/images/svg/ic_minus.svg")),
               Expanded(
                   child: Text(
-                widget.itemModel.itemCount.toString(),
+                widget.itemModel.count.toString(),
                 style: context.textTheme.headlineLarge
                     ?.copyWith(color: Colors.black, fontSize: 32),
                 textAlign: TextAlign.center,
               )),
               IconButton(
-                  onPressed: () {
-                    int value = widget.itemModel.itemCount;
+                  onPressed: () async {
+                    int value = widget.itemModel.count;
                     value++;
-                    updateItemCount(value, widget.itemModel.id);
+                    updateItemCount(value, widget.itemModel.id.toString());
+                    bool isEnable = sessionRepository.isEnableItemVibration();
+                    if (isEnable) {
+                      if (await Vibration.hasVibrator() == true) {
+                        Vibration.vibrate();
+                      }
+                    }
                   },
                   icon: SvgPicture.asset("assets/images/svg/ic_plus.svg")),
             ],

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:xstock/config/config.dart';
 import 'package:xstock/constants/app_colors.dart';
 import 'package:xstock/modules/home/pages/home_page.dart';
+import 'package:xstock/modules/user/cubits/user_cubit.dart';
 import 'package:xstock/ui/widgets/appbar_widget.dart';
 import 'package:xstock/ui/widgets/primary_button.dart';
 import 'package:xstock/utils/utils.dart';
@@ -122,7 +124,9 @@ class SubscriptionPage extends StatelessWidget {
                       ),
                       child: PrimaryButton(
                         onPressed: () {
-                          NavRouter.pushWithAnimation(context, HomePage(),
+                          context.read<UserCubit>().loadUser();
+                          var user = context.read<UserCubit>().state.userModel;
+                          NavRouter.pushWithAnimation(context, HomePage(userModel: user,),
                               type: PageTransitionType.size,
                               hasAlignment: true);
                         },
@@ -237,7 +241,9 @@ class SubscriptionPage extends StatelessWidget {
                       ),
                       child: PrimaryButton(
                         onPressed: () {
-                          NavRouter.pushWithAnimation(context, HomePage(),
+                          context.read<UserCubit>().loadUser();
+                          var user = context.read<UserCubit>().state.userModel;
+                          NavRouter.pushWithAnimation(context, HomePage(userModel: user,),
                               type: PageTransitionType.size,
                               hasAlignment: true);
                         },

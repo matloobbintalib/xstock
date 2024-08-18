@@ -67,8 +67,8 @@ class _DeleteDialogState extends State<DeleteDialog> {
                 Expanded(
                   child: PrimaryButton(
                     onPressed: ()  {
-                      widget.onConfirmDelete();
                       NavRouter.pop(context);
+                      widget.onConfirmDelete();
                     },
                     title: 'Okay',
                     height: 50,

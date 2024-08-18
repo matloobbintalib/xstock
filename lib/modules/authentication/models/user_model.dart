@@ -1,31 +1,69 @@
-
 class UserModel {
-  String branch_name;
+  String? id;
+  String branchName;
   String email;
-  String user_id;
+  String deviceId;
+  String? fcmToken;
+  String alertEmail;
+  bool isSelected;
 
   UserModel({
-    required this.branch_name,
+    this.id,
+    required this.branchName,
     required this.email,
-    required this.user_id,
+    required this.deviceId,
+    required this.alertEmail,
+    this.fcmToken,
+    this.isSelected = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        branch_name: json["branch_name"],
+        id: json["id"],
         email: json["email"],
-        user_id: json["user_id"]
+        branchName: json["branch_name"],
+        deviceId: json["device_id"],
+        fcmToken: json["fcm_token"],
+        alertEmail: json["alert_email"],
       );
 
-  Map<String, dynamic> toJson() =>
-      {
-        "branch_name": branch_name,
+  Map<String, dynamic> toJson() => {
+        "id": id,
         "email": email,
-        "user_id": user_id,
+        "branch_name": branchName,
+        "device_id": deviceId,
+        "fcm_token": fcmToken,
+        "alert_email": alertEmail,
       };
 
   static UserModel empty = UserModel(
-    branch_name: '',
+    id: '',
     email: '',
-    user_id: '',
+    branchName: '',
+    deviceId: '',
+    fcmToken: '',
+    alertEmail: '',
   );
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'email': email,
+      'branch_name': branchName,
+      'device_id': deviceId,
+      'fcm_token': fcmToken,
+      'alert_email': alertEmail,
+    };
+  }
+
+  // Convert a Map object into a User object
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+      id: map['id'],
+      email: map['email'],
+      branchName: map['branch_name'],
+      deviceId: map['device_id'],
+      fcmToken: map['fcm_token'],
+      alertEmail: map['alert_email'],
+    );
+  }
 }

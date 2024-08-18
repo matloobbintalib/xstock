@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:month_year_picker/month_year_picker.dart';
 
 class CustomDateTimePicker {
   static Future<String> displayTimePicker(BuildContext context) async {
@@ -55,34 +54,8 @@ class CustomDateTimePicker {
     } else {
       return '';
     }
-    /*final DateTime? picked = await showDatePicker(
-        context: context,
-        initialDate: DateTime.now(),
-        firstDate: DateTime.now(),
-        lastDate: DateTime(2101));
-    if (picked != null) {
-      return changeDateFormat(picked);
-    } else {
-      return '';
-    }*/
   }
 
-  static Future<String> selectMonthYear(BuildContext context) async {
-    DateTime now = DateTime.now();
-    final DateTime? picked = await showMonthYearPicker(
-        context: context,
-        initialDate: DateTime(now.year, now.month, now.day),
-        firstDate: DateTime(now.year, now.month, now.day),
-        lastDate: DateTime(2101),
-        selectableMonthYearPredicate: (DateTime val) {
-          return !dateComparision([], val);
-        });
-    if (picked != null) {
-      return changeDateFormat(picked);
-    } else {
-      return '';
-    }
-  }
 
   static bool areSameDay(DateTime one, DateTime two) {
     return one.day == two.day && one.month == two.month && one.year == two.year;

@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:xstock/modules/authentication/models/user_model.dart';
 import 'package:xstock/modules/home/models/group_model.dart';
 import 'package:xstock/modules/settings/cubit/accounts_state.dart';
 import 'package:xstock/modules/settings/models/account_title_model.dart';
@@ -6,7 +7,7 @@ import 'package:xstock/modules/settings/models/account_title_model.dart';
 class AccountsCubit extends Cubit<AccountsState> {
   AccountsCubit() : super(AccountsState.initial());
 
-  List<AccountTitleModel> accounts =[];
+  List<UserModel> accounts =[];
   void updateAccountSelection(String email){
     accounts.forEach((element) {
       if(element.email == email) {
@@ -18,7 +19,7 @@ class AccountsCubit extends Cubit<AccountsState> {
     emit(state.copyWith(accounts:  accounts));
   }
 
-  void initialList(List<AccountTitleModel> list){
+  void initialList(List<UserModel> list){
     accounts = list;
     emit(state.copyWith(accounts:  accounts));
   }

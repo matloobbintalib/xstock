@@ -26,6 +26,7 @@ class XStockApp extends StatelessWidget {
             title: 'XStock',
             debugShowCheckedModeBanner: false,
             theme: lightTheme,
+            darkTheme: ThemeData.light(),
             themeMode: ThemeMode.light,
             builder: (BuildContext context, Widget? child) {
               child = BotToastInit()(context, child);

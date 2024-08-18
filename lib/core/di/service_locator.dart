@@ -1,7 +1,11 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:xstock/core/network/dio_client.dart';
+import 'package:xstock/core/notifications/cloud_messaging_api.dart';
+import 'package:xstock/core/notifications/local_notification_api.dart';
 import 'package:xstock/modules/authentication/repository/user_account_repository.dart';
 import 'package:xstock/modules/common/repo/session_repository.dart';
+import 'package:xstock/modules/home/repo/notification_repo.dart';
 
 import '../../config/environment.dart';
 import '../security/secured_auth_storage.dart';
@@ -24,9 +28,20 @@ void setupLocator(Environment environment) async {
   );
 
   sl.registerLazySingleton<AuthSecuredStorage>(() => AuthSecuredStorage());
+  sl.registerLazySingleton<DioClient>(() => DioClient( environment: sl()));
+
+
+  // notifications
+  sl.registerLazySingleton<CloudMessagingApi>(() => CloudMessagingApi());
+  sl.registerLazySingleton<LocalNotificationsApi>(
+          () => LocalNotificationsApi());
 
   // Repositories
-
+  sl.registerLazySingleton<NotificationRepository>(
+        () => NotificationRepository(
+      dioClient: sl(),
+    ),
+  );
   /// ************************************** Authentication **************************************
 
   sl.registerLazySingleton<SessionRepository>(
